@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-24T00:00:00Z",
+  "publisher": "SQL PRIME",
+  "note": "SHA256 values are null until verified from an official Microsoft source/file. Size is used as fallback when hash is unavailable.",
+  "installers": [
+    {
+      "name": "SQLServer2008SP4-KB2979596-x64-ENU.exe",
+      "product": "10.0",
+      "sp": "SP4",
+      "kb": "2979596",
+      "arch": "x64",
+      "lang": "ENU",
+      "size": 396782240,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/5/e/7/5e7a89f7-c013-4090-901e-1a0f86b6a94c/ENU/SQLServer2008SP4-KB2979596-x64-ENU.exe",
+      "support": "https://support.microsoft.com/help/2979596"
+    },
+    {
+      "name": "SQLServer2008SP4-KB2979596-x86-ENU.exe",
+      "product": "10.0",
+      "sp": "SP4",
+      "kb": "2979596",
+      "arch": "x86",
+      "lang": "ENU",
+      "size": 326047912,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/5/e/7/5e7a89f7-c013-4090-901e-1a0f86b6a94c/ENU/SQLServer2008SP4-KB2979596-x86-ENU.exe",
+      "support": "https://support.microsoft.com/help/2979596"
+    },
+    {
+      "name": "SQLServer2008R2SP2-KB2630458-x64-ENU.exe",
+      "product": "10.50",
+      "sp": "SP2",
+      "kb": "2630458",
+      "arch": "x64",
+      "lang": "ENU",
+      "size": 369585096,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/3/d/c/3dc6663d-8a76-40a6-bcf2-2808c385d56a/SQLServer2008R2SP2-KB2630458-x64-ENU.exe",
+      "support": "https://support.microsoft.com/help/2630458"
+    },
+    {
+      "name": "SQLServer2008R2SP2-KB2630458-x86-ENU.exe",
+      "product": "10.50",
+      "sp": "SP2",
+      "kb": "2630458",
+      "arch": "x86",
+      "lang": "ENU",
+      "size": 253357488,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/3/d/c/3dc6663d-8a76-40a6-bcf2-2808c385d56a/SQLServer2008R2SP2-KB2630458-x86-ENU.exe",
+      "support": "https://support.microsoft.com/help/2630458"
+    },
+    {
+      "name": "SQLServer2008R2SP3-KB2979597-x64-ENU.exe",
+      "product": "10.50",
+      "sp": "SP3",
+      "kb": "2979597",
+      "arch": "x64",
+      "lang": "ENU",
+      "size": 375792304,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/d/7/a/d7a28b6c-fcfe-4f70-a902-b109388e01e9/ENU/SQLServer2008R2SP3-KB2979597-x64-ENU.exe",
+      "support": "https://support.microsoft.com/help/2979597"
+    },
+    {
+      "name": "SQLServer2008R2SP3-KB2979597-x86-ENU.exe",
+      "product": "10.50",
+      "sp": "SP3",
+      "kb": "2979597",
+      "arch": "x86",
+      "lang": "ENU",
+      "size": 259195056,
+      "sha256": null,
+      "directUrl": "https://download.microsoft.com/download/d/7/a/d7a28b6c-fcfe-4f70-a902-b109388e01e9/ENU/SQLServer2008R2SP3-KB2979597-x86-ENU.exe",
+      "support": "https://support.microsoft.com/help/2979597"
+    }
+  ]
+}
