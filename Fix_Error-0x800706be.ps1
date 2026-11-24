@@ -171,6 +171,17 @@ function Save-Config {
     $cfg | ConvertTo-Json | Out-File -FilePath $ConfigPath -Encoding utf8 -Force
 }
 
+# Módulos Fase 0 (fundación): config, logging estructurado, integridad.
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1')
+foreach ($m in $script:Phase0Modules) {
+    $mp = Join-Path $PSScriptRoot $m
+    if (Test-Path -LiteralPath $mp) {
+        try { . $mp } catch { Write-Warning "No se pudo cargar $m: $($_.Exception.Message)" }
+    }
+}
+try { $null = Get-SQLPrimeConfig -BaseDir $PSScriptRoot; Initialize-SQLPrimeLogging -BaseDir (Join-Path $PSScriptRoot 'modules') } catch { }
+$script:KnownHashes = @{}
+
 # Modulo con TODAS las mejoras avanzadas (Bloques A-F). Se carga antes de la GUI
 # para que sus funciones ya existan cuando se enlacen los eventos de los botones.
 $script:EnhancementsPath = Join-Path $PSScriptRoot "SQL_PRIME_Enhancements.ps1"
@@ -1150,9 +1161,13 @@ $script:DownloadTimerTick = {
                 $mode = if ($r.Resumed) { "REANUDADO" } else { "DESCARGADO" }
                 $pctStr = ''
                 if ($r.Total -gt 0) { $pctStr = " ($([math]::Round(100 * $r.Bytes / $r.Total, 1))%)" }
-                Update-UI -Log "$mode`: $($r.Name) ($([math]::Round($r.Bytes / 1MB, 1)) MB$pctStr) -> $($r.Path)" -LogColor "#00FF00"
+                $hashStr = ''
+                try { if ($r.PSObject.Properties.Name -contains 'Sha256' -and $r.Sha256) { $hashStr = " | SHA256: $($r.Sha256)" } } catch { }
+                Update-UI -Log "$mode`: $($r.Name) ($([math]::Round($r.Bytes / 1MB, 1)) MB$pctStr) -> $($r.Path)$hashStr" -LogColor "#00FF00"
+                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -Message "Download completed: $($r.Name)" -Data @{ name=$r.Name; path=$r.Path; bytes=$r.Bytes; resumed=$r.Resumed; sha256=$r.Sha256; hashChecked=$r.HashChecked } } } catch { }
             } else {
                 Update-UI -Log "FALLO: $($r.Name) - $($r.Message)" -LogColor "#FF0000"
+                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level ERROR -Component 'download' -Message "Download failed: $($r.Name)" -Data @{ name=$r.Name; message=$r.Message } } } catch { }
             }
             if ($script:DownloadTotal -gt 0) {
                 $ProgressBar.Value = [Math]::Min(95, 5 + [int](90 * $script:DownloadResults.Count / $script:DownloadTotal))
@@ -2027,15 +2042,18 @@ function Start-InstallerDownloads {
 
             $resumeBytes = 0
             if (Test-Path -LiteralPath $partPath) { $resumeBytes = [int64](Get-Item -LiteralPath $partPath).Length }
+            $expectedHash = $null
+            try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $name } } catch { }
             $targets += [pscustomobject]@{
-                Name         = $name
-                Url          = $url
-                Path         = $partPath
-                FinalPath    = $finalPath
-                Dir          = $folderPath
-                SP           = $def.SP
-                ResumeBytes  = $resumeBytes
-                ExpectedSize = $expectedSize
+                Name           = $name
+                Url            = $url
+                Path           = $partPath
+                FinalPath      = $finalPath
+                Dir            = $folderPath
+                SP             = $def.SP
+                ResumeBytes    = $resumeBytes
+                ExpectedSize   = $expectedSize
+                ExpectedSha256 = $expectedHash
             }
             if ($resumeBytes -gt 0) {
                 Update-UI -Log "Pendiente: $name -> $folderPath (REANUDAR desde $([math]::Round($resumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00"
@@ -2074,7 +2092,9 @@ function Start-InstallerDownloads {
     $script:DownloadJob = Start-Job -ScriptBlock {
         param($items)
         foreach ($item in $items) {
-            $result = [pscustomobject]@{ Type="RESULT"; Name=$item.Name; Status="ERROR"; Path=$item.FinalPath; Bytes=0; Expected=$item.ExpectedSize; Resumed=$false; Message="" }
+            $expectedHash = $null
+            try { if ($item.PSObject.Properties.Name -contains 'ExpectedSha256') { $expectedHash = [string]$item.ExpectedSha256 } } catch { }
+            $result = [pscustomobject]@{ Type="RESULT"; Name=$item.Name; Status="ERROR"; Path=$item.FinalPath; Bytes=0; Expected=$item.ExpectedSize; Resumed=$false; Sha256=$null; HashChecked=$false; HashOk=$true; Message="" }
             $fs = $null
             $resp = $null
             try {
@@ -2128,6 +2148,20 @@ function Start-InstallerDownloads {
                 }
                 if ($len -lt 1000000) { throw "Fichero demasiado pequeño ($len bytes)." }
                 Move-Item -LiteralPath $item.Path -Destination $item.FinalPath -Force -ErrorAction Stop
+
+                # Fase 0: calcular SHA256 y verificar si hay hash esperado.
+                $sha = [System.Security.Cryptography.SHA256]::Create()
+                $hs = [System.IO.File]::OpenRead($item.FinalPath)
+                try { $result.Sha256 = ([BitConverter]::ToString($sha.ComputeHash($hs)) -replace '-','').ToLowerInvariant() }
+                finally { $hs.Dispose(); $sha.Dispose() }
+                if ($expectedHash -and $expectedHash.Length -eq 64) {
+                    $result.HashChecked = $true
+                    $result.HashOk = ($result.Sha256 -eq $expectedHash.ToLowerInvariant())
+                    if (-not $result.HashOk) {
+                        throw "SHA256 incorrecto: esperado $expectedHash, obtenido $($result.Sha256)."
+                    }
+                }
+
                 $result.Status = "OK"
                 $result.Bytes = $len
                 $result.Resumed = ($start -gt 0)

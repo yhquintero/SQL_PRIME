@@ -29,6 +29,8 @@ __pycache__/
 .DS_Store
 web/dist/
 *.log
+*.jsonl
+logs/
 .arena/
 
 # Datos del servidor (base de datos, copias y clave de cifrado)
