@@ -68,17 +68,26 @@ SQL PRIME trata las operaciones de sistema como **sensibles por defecto**:
 SQL_PRIME/
 ├── Fix_Error-0x800706be.ps1      # App principal WPF (UI + flujos)
 ├── SQL_PRIME_Enhancements.ps1    # Mejoras avanzadas (A-H)
-├── modules/
+├── modules/                      # Módulos Fase 0 (Core)
 │   ├── Config.ps1                # Config versionada y defaults
 │   ├── Logging.ps1               # JSONL estructurado + rotación
-│   └── Integrity.ps1             # SHA256 y verificación
+│   ├── Integrity.ps1             # SHA256 y verificación
+│   ├── ErrorHandling.ps1         # operationId y errores estándar
+│   ├── Authenticode.ps1          # Verificación de firma
+│   └── Catalog.ps1               # Definiciones SP/KB/URLs/tamaños
 ├── config/
 │   └── app.config.json           # Config base (schemaVersion)
 ├── catalog/
 │   └── catalog.json              # Catálogo de instaladores (hash/size/url)
+├── scripts/                      # Utilidades (hashes, tests, mantenimiento)
+├── tests/                        # Tests Pester
 ├── docs/
 │   ├── ROADMAP.md                # Roadmap por fases
 │   └── assets/                   # Capturas para README/web
+├── Instaladores/                 # Carpetas por versión SQL Server
+│   ├── SQL Server 2008 (10.0)/   # Estructura por SP/CU/arch/lang
+│   ├── SQL Server 2008 R2 (10.50)/
+│   └── ...                       # 6.5 -> 2025
 └── logs/                         # Generado en runtime (ignorado)
 ```
 

@@ -278,7 +278,9 @@ function New-SQLVersionFolders {
             Update-UI -Log "Versión desconocida: $key" -LogColor "#FF0000"
             continue
         }
-        $vRoot = Join-Path $BaseDir (Get-SafeFolderName $v.Folder)
+        $installersRoot = Join-Path $BaseDir "Instaladores"
+        if (-not (Test-Path -LiteralPath $installersRoot)) { New-Item -ItemType Directory -Path $installersRoot -Force | Out-Null }
+        $vRoot = Join-Path $installersRoot (Get-SafeFolderName $v.Folder)
         $archs = @($v.Archs)
         $langs = @("ENU", "ESN")
 
@@ -1871,7 +1873,8 @@ function Start-InstallerDownloads {
                 $_.Arch -eq $arch -and $_.Lang -eq $lang
             })
             $versionFolder = if ($def.Major -eq "10.50") { "SQL Server 2008 R2 (10.50)" } else { "SQL Server 2008 (10.0)" }
-            $structuredDir = Join-Path $PSScriptRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
+            $installersRoot = Join-Path $PSScriptRoot "Instaladores"
+            $structuredDir = Join-Path $installersRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
             $sameSP = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber })
             $folderPath = if ($sameFile.Count -gt 0) {
                 $sameFile[0].FolderPath
@@ -1880,7 +1883,7 @@ function Start-InstallerDownloads {
             } elseif ($sameSP.Count -gt 0) {
                 $sameSP[0].FolderPath
             } else {
-                Join-Path $PSScriptRoot "$($family)SP$($def.SPNumber)"
+                Join-Path $installersRoot "$($family)SP$($def.SPNumber)"
             }
 
             $finalPath = Join-Path $folderPath $name
