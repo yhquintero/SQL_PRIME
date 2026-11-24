@@ -34,6 +34,6 @@ foreach ($installer in @($catalog.installers)) {
     Write-Host "OK $($installer.name) => $hash"
 }
 
-$catalog.generatedAt = (Get-Date).ToString('o')
+$catalog | Add-Member -NotePropertyName 'generatedAt' -NotePropertyValue (Get-Date).ToString('o') -Force
 $catalog | ConvertTo-Json -Depth 8 | Out-File -FilePath $CatalogPath -Encoding utf8 -Force
 Write-Host "Updated $updated installer(s) in $CatalogPath"
