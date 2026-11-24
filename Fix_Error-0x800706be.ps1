@@ -172,7 +172,7 @@ function Save-Config {
 }
 
 # Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1')
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
@@ -1421,37 +1421,18 @@ function Get-SQLServerInfo {
         $info.LanguageCode = Get-LanguageCode -Lcid $info.Language
         $info.LanguageName = Get-LanguageDisplayName -Lcid $info.Language -Code $info.LanguageCode
         if ($version) {
-            $parts = $version.Split('.')
-            $major = "$($parts[0]).$($parts[1])"
-            $build = [int]$parts[2]
-            $info.MajorVersion = $major
-            $info.Build = $version
-            
-            # Lógica exacta para detectar el SP
-            if ($major -eq "10.0") {
-                $info.ProductName = "SQL Server 2008"
-                if ($build -ge 6000) { $info.SPLevel = "SP4" }
-                elseif ($build -ge 5500) { $info.SPLevel = "SP3" }
-                elseif ($build -ge 4000) { $info.SPLevel = "SP2" }
-                elseif ($build -ge 2531) { $info.SPLevel = "SP1" }
-                else { $info.SPLevel = "RTM" }
-            } elseif ($major -eq "10.50") {
-                $info.ProductName = "SQL Server 2008 R2"
-                if ($build -ge 6000) { $info.SPLevel = "SP3" }
-                elseif ($build -ge 4000) { $info.SPLevel = "SP2" }
-                elseif ($build -ge 2500) { $info.SPLevel = "SP1" }
-                else { $info.SPLevel = "RTM" }
+            $buildInfo = if (Get-Command Resolve-SQLBuildInfo -ErrorAction SilentlyContinue) {
+                Resolve-SQLBuildInfo -Build $version -BuildMap @($script:SQLBuildMap)
+            } else { $null }
+            if ($buildInfo) {
+                $info.MajorVersion = $buildInfo.MajorVersion
+                $info.Build = $buildInfo.Build
+                $info.ProductName = $buildInfo.ProductName
+                $info.SPLevel = $buildInfo.SPLevel
             } else {
-                # Detección genérica para el resto de versiones del catálogo.
-                $map = $script:SQLBuildMap | Where-Object { $_.Prefix -eq $major } | Select-Object -First 1
-                if ($map) {
-                    $info.ProductName = $map.Name
-                    $spFound = $map.SPs | Where-Object { $build -ge $_.Min } | Select-Object -First 1
-                    $info.SPLevel = if ($spFound) { $spFound.Label } else { "RTM" }
-                } else {
-                    $info.ProductName = "SQL Server $major"
-                    $info.SPLevel = "Build $build"
-                }
+                $parts = $version.Split('.')
+                $info.MajorVersion = "$($parts[0]).$($parts[1])"
+                $info.Build = $version
             }
         }
     }
@@ -1459,9 +1440,10 @@ function Get-SQLServerInfo {
     if (Test-Path $setupKey) {
         $setupProps = Get-ItemProperty -Path $setupKey
         $info.Edition = $setupProps.Edition
-        # Version de MSI: distingue rama GDR (10.50.x) de rama QFE/CU (10.52.x).
         $info.ProductVersion = "$($setupProps.Version)"
-        if ($info.MajorVersion -and $info.ProductVersion -match '^(\d+)\.(\d+)\.') {
+        if (Get-Command Test-SQLPrimeQfeBranch -ErrorAction SilentlyContinue) {
+            $info.IsQFE = [bool](Test-SQLPrimeQfeBranch -MajorVersion $info.MajorVersion -ProductVersion $info.ProductVersion)
+        } elseif ($info.MajorVersion -and $info.ProductVersion -match '^(\d+)\.(\d+)\.') {
             $msiMajor = "$($matches[1]).$($matches[2])"
             $info.IsQFE = ($msiMajor -ne $info.MajorVersion)
         }
@@ -2034,45 +2016,7 @@ function Export-RegistryKeyBackup {
     }
 }
 
-# Lista única de servicios SQL de la instancia (instalados o no). Get-Service
-# se encarga de descartar los que no existen en este servidor.
-function Get-SQLServiceCandidates {
-    param([string]$Instance)
-
-    $isDefault = ($Instance -ieq "MSSQLSERVER")
-    $suffix = if ($isDefault) { "" } else { "`$$Instance" }
-    # El motor con nombre se llama MSSQL$INST (no MSSQLSERVER$INST).
-    $engine = if ($isDefault) { "MSSQLSERVER" } else { "MSSQL`$$Instance" }
-    $agent  = if ($isDefault) { "SQLSERVERAGENT" } else { "SQLSERVERAGENT`$$Instance" }
-    $filestream = if ($isDefault) { "MSSQLFDLauncher" } else { "MSSQLFDLauncher`$$Instance" }
-    return @(
-        $engine,
-        $agent,
-        $filestream,
-        "SQLBrowser",
-        "SQLWriter",
-        "MSSQLServerOLAPService$suffix",
-        "MSSQLServerOLAPService",
-        "ReportServer$suffix",
-        "ReportServer",
-        "MsDtsServer100", "MsDtsServer110", "MsDtsServer120",
-        "MsDtsServer130", "MsDtsServer140", "MsDtsServer150",
-        "SQLServerIntegrationServices$suffix",
-        "SQLServerDistributedReplayController",
-        "SQLServerDistributedReplayClient"
-    ) | Select-Object -Unique
-}
-
-# Una sola llamada a Get-Service para TODOS los candidatos: evita decenas de
-# consultas al Service Control Manager y es la base del modo rápido (Bloque G).
-function Get-SQLServiceStates {
-    param([string]$Instance)
-    $map = @{}
-    foreach ($s in @(Get-Service -Name @(Get-SQLServiceCandidates -Instance $Instance) -ErrorAction SilentlyContinue)) {
-        if ($null -ne $s -and $s.Name) { $map[$s.Name] = $s }
-    }
-    return $map
-}
+# Get-SQLServiceCandidates / Get-SQLServiceStates movidos a modules/Services.ps1 (Fase 0).
 
 # Inicia TODOS los servicios relacionados con SQL Server: motor, Agent,
 # FILESTREAM, Browser, VSS Writer, SSAS, SSRS, SSIS y Distributed Replay.
