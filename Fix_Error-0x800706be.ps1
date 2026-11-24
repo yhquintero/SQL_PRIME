@@ -172,7 +172,7 @@ function Save-Config {
 }
 
 # Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1')
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1','modules\Wizard.ps1','modules\I18n.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
