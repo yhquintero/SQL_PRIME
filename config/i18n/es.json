@@ -1,0 +1,9 @@
+{
+  "app.title": "SQL PRIME",
+  "action.diagnose": "Diagnosticar",
+  "action.backup": "Respaldar",
+  "action.apply": "Aplicar",
+  "action.verify": "Verificar",
+  "download.missing": "Descargar faltantes",
+  "status.ready": "Listo"
+}

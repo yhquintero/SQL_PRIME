@@ -1737,80 +1737,78 @@ function Start-InstallerDownloads {
     Update-UI -Log "=== DESCARGAR INSTALADORES FALTANTES ($lang) === [op:$($script:DownloadOperationId)]" -LogColor "#FF00FF"
     try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message 'Download operation started' -Data @{ lang=$lang; major=$major } } } catch { }
 
+    # Construcción de objetivos: usa módulo Download si está disponible (Fase 0).
+    $targetPlan = $null
+    if (Get-Command Get-SQLPrimeDownloadTargets -ErrorAction SilentlyContinue) {
+        $targetPlan = Get-SQLPrimeDownloadTargets -Definitions $defs -Lang $lang -BaseDir $PSScriptRoot -Inventory $script:Inventory -KnownSizes $script:KnownSizes `
+            -GetDirectUrl { param($d,$a,$l) Get-DirectUrl -Definition $d -Arch $a -Lang $l } `
+            -GetExpectedFileName { param($maj,$sp,$a,$l) Get-ExpectedFileName -MajorVersion $maj -SPNumber $sp -Arch $a -Lang $l }
+    }
+
     $targets = @()
     $missingNoDirect = @()
-    foreach ($def in $defs) {
-        $family = if ($def.Major -eq "10.50") { "SQLServer2008R2" } else { "SQLServer2008" }
-        foreach ($arch in @("x64", "x86")) {
-            $url = Get-DirectUrl -Definition $def -Arch $arch -Lang $lang
-            $name = Get-ExpectedFileName -MajorVersion $def.Major -SPNumber $def.SPNumber -Arch $arch -Lang $lang
-
-            # Elegir la carpeta exacta (SP + arquitectura + idioma). Asi los .part
-            # se reanudan en su idioma correcto y no se mezclan ENU con ESN.
-            $sameFile = @($script:Inventory | Where-Object {
-                $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber -and
-                $_.Arch -eq $arch -and $_.Lang -eq $lang
-            })
-            $versionFolder = if ($def.Major -eq "10.50") { "SQL Server 2008 R2 (10.50)" } else { "SQL Server 2008 (10.0)" }
-            $installersRoot = Join-Path $PSScriptRoot "Instaladores"
-            $structuredDir = Join-Path $installersRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
-            $sameSP = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber })
-            $folderPath = if ($sameFile.Count -gt 0) {
-                $sameFile[0].FolderPath
-            } elseif (Test-Path -LiteralPath $structuredDir) {
-                $structuredDir
-            } elseif ($sameSP.Count -gt 0) {
-                $sameSP[0].FolderPath
-            } else {
-                Join-Path $installersRoot "$($family)SP$($def.SPNumber)"
-            }
-
-            $finalPath = Join-Path $folderPath $name
-            $partPath  = "$finalPath.part"
-            $expectedSize = Get-KnownSize -Name $name
-
-            if (Test-Path -LiteralPath $finalPath) {
-                $actual = (Get-Item -LiteralPath $finalPath).Length
-                if ($expectedSize -gt 0 -and $actual -lt $expectedSize) {
-                    # Descarga anterior incompleta: se marca como .part para reanudar.
-                    try {
-                        Move-Item -LiteralPath $finalPath -Destination $partPath -Force -ErrorAction Stop
-                        Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $name" -LogColor "#FFFF00"
-                    } catch {
-                        Update-UI -Log "No se pudo marcar '$name' como parcial (puede estar en uso): $($_.Exception.Message)" -LogColor "#FF0000"
-                        continue
-                    }
-                } else {
-                    Update-UI -Log "[OK] Ya existe: $finalPath" -LogColor "#00FF00"
+    if ($targetPlan) {
+        foreach ($n in @($targetPlan.AlreadyPresent)) { Update-UI -Log "[OK] Ya existe: $n" -LogColor "#00FF00" }
+        foreach ($n in @($targetPlan.MissingNoDirect)) {
+            $missingNoDirect += $n
+            Update-UI -Log "[SIN URL DIRECTA] $n - usa el catálogo/enlace del informe." -LogColor "#FFAA00"
+        }
+        foreach ($t in @($targetPlan.Targets)) {
+            # Mover final incompleto a .part para reanudar (comportamiento existente).
+            if ($t.IncompleteFinal -and (Test-Path -LiteralPath $t.FinalPath)) {
+                try {
+                    $actual = (Get-Item -LiteralPath $t.FinalPath).Length
+                    Move-Item -LiteralPath $t.FinalPath -Destination $t.Path -Force -ErrorAction Stop
+                    $t.ResumeBytes = [int64](Get-Item -LiteralPath $t.Path).Length
+                    Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $($t.Name)" -LogColor "#FFFF00"
+                } catch {
+                    Update-UI -Log "No se pudo marcar '$($t.Name)' como parcial (puede estar en uso): $($_.Exception.Message)" -LogColor "#FF0000"
                     continue
                 }
             }
-
-            if (-not $url) {
-                $missingNoDirect += $name
-                Update-UI -Log "[SIN URL DIRECTA] $name - usa el catálogo/enlace del informe." -LogColor "#FFAA00"
-                continue
-            }
-
-            $resumeBytes = 0
-            if (Test-Path -LiteralPath $partPath) { $resumeBytes = [int64](Get-Item -LiteralPath $partPath).Length }
+            if (Test-Path -LiteralPath $t.Path) { $t.ResumeBytes = [int64](Get-Item -LiteralPath $t.Path).Length }
             $expectedHash = $null
-            try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $name } } catch { }
+            try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $t.Name } } catch { }
             $targets += [pscustomobject]@{
-                Name           = $name
-                Url            = $url
-                Path           = $partPath
-                FinalPath      = $finalPath
-                Dir            = $folderPath
-                SP             = $def.SP
-                ResumeBytes    = $resumeBytes
-                ExpectedSize   = $expectedSize
-                ExpectedSha256 = $expectedHash
+                Name=$t.Name; Url=$t.Url; Path=$t.Path; FinalPath=$t.FinalPath; Dir=$t.Dir; SP=$t.SP;
+                ResumeBytes=$t.ResumeBytes; ExpectedSize=$t.ExpectedSize; ExpectedSha256=$expectedHash
             }
-            if ($resumeBytes -gt 0) {
-                Update-UI -Log "Pendiente: $name -> $folderPath (REANUDAR desde $([math]::Round($resumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00"
+            if ($t.ResumeBytes -gt 0) {
+                Update-UI -Log "Pendiente: $($t.Name) -> $($t.Dir) (REANUDAR desde $([math]::Round($t.ResumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00"
             } else {
-                Update-UI -Log "Pendiente: $name -> $folderPath (nueva)" -LogColor "#FFFF00"
+                Update-UI -Log "Pendiente: $($t.Name) -> $($t.Dir) (nueva)" -LogColor "#FFFF00"
+            }
+        }
+    } else {
+        # Fallback legacy si el módulo Download no está cargado.
+        foreach ($def in $defs) {
+            $family = if ($def.Major -eq "10.50") { "SQLServer2008R2" } else { "SQLServer2008" }
+            foreach ($arch in @("x64", "x86")) {
+                $url = Get-DirectUrl -Definition $def -Arch $arch -Lang $lang
+                $name = Get-ExpectedFileName -MajorVersion $def.Major -SPNumber $def.SPNumber -Arch $arch -Lang $lang
+                $sameFile = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber -and $_.Arch -eq $arch -and $_.Lang -eq $lang })
+                $versionFolder = if ($def.Major -eq "10.50") { "SQL Server 2008 R2 (10.50)" } else { "SQL Server 2008 (10.0)" }
+                $installersRoot = Join-Path $PSScriptRoot "Instaladores"
+                $structuredDir = Join-Path $installersRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
+                $sameSP = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber })
+                $folderPath = if ($sameFile.Count -gt 0) { $sameFile[0].FolderPath } elseif (Test-Path -LiteralPath $structuredDir) { $structuredDir } elseif ($sameSP.Count -gt 0) { $sameSP[0].FolderPath } else { Join-Path $installersRoot "$($family)SP$($def.SPNumber)" }
+                $finalPath = Join-Path $folderPath $name
+                $partPath  = "$finalPath.part"
+                $expectedSize = Get-KnownSize -Name $name
+                if (Test-Path -LiteralPath $finalPath) {
+                    $actual = (Get-Item -LiteralPath $finalPath).Length
+                    if ($expectedSize -gt 0 -and $actual -lt $expectedSize) {
+                        try { Move-Item -LiteralPath $finalPath -Destination $partPath -Force -ErrorAction Stop; Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $name" -LogColor "#FFFF00" }
+                        catch { Update-UI -Log "No se pudo marcar '$name' como parcial: $($_.Exception.Message)" -LogColor "#FF0000"; continue }
+                    } else { Update-UI -Log "[OK] Ya existe: $finalPath" -LogColor "#00FF00"; continue }
+                }
+                if (-not $url) { $missingNoDirect += $name; Update-UI -Log "[SIN URL DIRECTA] $name - usa el catálogo/enlace del informe." -LogColor "#FFAA00"; continue }
+                $resumeBytes = 0
+                if (Test-Path -LiteralPath $partPath) { $resumeBytes = [int64](Get-Item -LiteralPath $partPath).Length }
+                $expectedHash = $null
+                try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $name } } catch { }
+                $targets += [pscustomobject]@{ Name=$name; Url=$url; Path=$partPath; FinalPath=$finalPath; Dir=$folderPath; SP=$def.SP; ResumeBytes=$resumeBytes; ExpectedSize=$expectedSize; ExpectedSha256=$expectedHash }
+                if ($resumeBytes -gt 0) { Update-UI -Log "Pendiente: $name -> $folderPath (REANUDAR desde $([math]::Round($resumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00" } else { Update-UI -Log "Pendiente: $name -> $folderPath (nueva)" -LogColor "#FFFF00" }
             }
         }
     }
