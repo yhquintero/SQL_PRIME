@@ -1,0 +1,37 @@
+*.exe
+*.part
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+keystore.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+.kotlin
+app/release/
+.vscode/
+node_modules/
+.venv/
+.venv-media/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+web/dist/
+*.log
+.arena/
+
+# Datos del servidor (base de datos, copias y clave de cifrado)
+/data/
+
+# Certificados locales de mkcert (server/iniciar-https.ps1) - no versionar llaves
+/certs/
