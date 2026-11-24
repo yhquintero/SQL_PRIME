@@ -1,14 +1,17 @@
 namespace SQLPrime.Core.Catalog;
 
-public sealed record InstallerPackage(
-    string Name,
-    string Product,
-    string ServicePack,
-    string Kb,
-    string Architecture,
-    string Language,
-    long SizeBytes,
-    string? Sha256,
-    string? DirectUrl,
-    string? SupportUrl
-);
+public sealed class InstallerPackage
+{
+    public string Name { get; set; } = "";
+    public string Product { get; set; } = "";
+    public string Sp { get; set; } = "";
+    public string Kb { get; set; } = "";
+    public string Arch { get; set; } = "";
+    public string Lang { get; set; } = "";
+    public long Size { get; set; }
+    public string? Sha256 { get; set; }
+    public string? DirectUrl { get; set; }
+    public string? Support { get; set; }
+    public string? VerifiedAt { get; set; }
+    public string? VerifiedFrom { get; set; }
+}
