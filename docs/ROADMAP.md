@@ -8,9 +8,9 @@
 - [x] Logging estructurado JSONL con rotación (`modules/Logging.ps1`)
 - [x] Verificación de integridad SHA-256 para descargas (`modules/Integrity.ps1`)
 - [x] Catálogo base de instaladores con tamaños/hashes (`catalog/catalog.json`)
-- [x] Tests Pester iniciales (Config/Integrity/ErrorHandling) en `tests/`
-- [ ] Separación completa UI/Core del script monolítico (en progreso: módulos Fase 0 extraídos)
-- [x] Verificación Authenticode (módulo + warning/confirmación antes de actualizar SP)
+- [x] Tests Pester iniciales (Config/Integrity/ErrorHandling/Catalog/Authenticode) en `tests/`
+- [ ] Separación completa UI/Core del script monolítico (en progreso: Config/Logging/Integrity/ErrorHandling/Authenticode/Catalog extraídos)
+- [x] Verificación Authenticode (módulo + warning/confirmación; política estricta configurable `security.verifyAuthenticode`)
 
 - [x] Manejo de errores estandarizado + `operationId` en descargas (`modules/ErrorHandling.ps1`)
 - [x] Script para poblar SHA256 desde archivos locales (`scripts/Update-CatalogHashes.ps1`)
