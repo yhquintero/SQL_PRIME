@@ -1,0 +1,100 @@
+SQL PRIME - INVENTARIO DE INSTALADORES SQL SERVER 2008 / 2008 R2
+Diagnostica. Repara. Actualiza.
+Generado: 2026-11-24 10:45:40
+Carpeta base: D:\Instaladores\SQL\Fix-SQL2008
+Instancia detectada: SQL Server 2008 R2 SP3 (build 10.50.6000.34)
+Idioma detectado (LCID): 1033 - English - United States / ENU
+Paquetes requeridos: ENU
+Arquitectura del sistema: x64
+Rama del producto: QFE/CU (10.52.x) (ProductVersion 10.53.6000.34)
+
+=== FICHEROS ENCONTRADOS (7) ===
+  ENU\SQLServer2008R2SP2-KB2630458-x64-ENU.exe
+     Producto: 10.50 | SP: SP2 | KB: 2630458 | Arq: x64 | Idioma: ENU | Tamaño: 352.5 MB
+  ESN\SQLServer2008R2SP2-KB2630458-x64-ESN.exe
+     Producto: 10.50 | SP: SP2 | KB: 2630458 | Arq: x64 | Idioma: ESN | Tamaño: 358.5 MB
+     AVISO: idioma ESN no coincide con la instalación (ENU); este fichero NO se aplicará.
+  ENU\SQLServer2008R2SP3-KB2979597-x64-ENU.exe
+     Producto: 10.50 | SP: SP3 | KB: 2979597 | Arq: x64 | Idioma: ENU | Tamaño: 358.4 MB
+  ESN\SQLServer2008R2SP3-KB2979597-x64-ESN.exe
+     Producto: 10.50 | SP: SP3 | KB: 2979597 | Arq: x64 | Idioma: ESN | Tamaño: 364.4 MB
+     AVISO: idioma ESN no coincide con la instalación (ENU); este fichero NO se aplicará.
+  ESN\SQLServer2008R2SP3-KB2979597-x86-ESN.exe
+     Producto: 10.50 | SP: SP3 | KB: 2979597 | Arq: x86 | Idioma: ESN | Tamaño: 252.5 MB
+     AVISO: idioma ESN no coincide con la instalación (ENU); este fichero NO se aplicará.
+  ESN\SQLServer2008SP4-KB2979596-x64-ESN.exe
+     Producto: 10.0 | SP: SP4 | KB: 2979596 | Arq: x64 | Idioma: ESN | Tamaño: 387.1 MB
+     AVISO: la carpeta 'ESN' no coincide; mover a 'SQLServer2008SP4'
+     AVISO: idioma ESN no coincide con la instalación (ENU); este fichero NO se aplicará.
+  ESN\SQLServer2008SP4-KB2979596-x86-ESN.exe
+     Producto: 10.0 | SP: SP4 | KB: 2979596 | Arq: x86 | Idioma: ESN | Tamaño: 319.2 MB
+     AVISO: la carpeta 'ESN' no coincide; mover a 'SQLServer2008SP4'
+     AVISO: idioma ESN no coincide con la instalación (ENU); este fichero NO se aplicará.
+
+=== FICHEROS ESPERADOS Y RUTA DE DESCARGA OFICIAL (IDIOMA ENU) ===
+  [FALTA] SQLServer2008SP2-KB2285068-x64-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2285068
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2285068
+        Información KB2285068: https://support.microsoft.com/help/2285068
+  [FALTA] SQLServer2008SP2-KB2285068-x86-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2285068
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2285068
+        Información KB2285068: https://support.microsoft.com/help/2285068
+  [FALTA] SQLServer2008SP3-KB2546951-x64-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2546951
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2546951
+        Información KB2546951: https://support.microsoft.com/help/2546951
+  [FALTA] SQLServer2008SP3-KB2546951-x86-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2546951
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2546951
+        Información KB2546951: https://support.microsoft.com/help/2546951
+  [FALTA] SQLServer2008SP4-KB2979596-x64-ENU.exe
+        Directo ENU: https://download.microsoft.com/download/5/e/7/5e7a89f7-c013-4090-901e-1a0f86b6a94c/ENU/SQLServer2008SP4-KB2979596-x64-ENU.exe
+        Página oficial: https://www.microsoft.com/en-us/download/details.aspx?id=44278
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2979596
+        Información KB2979596: https://support.microsoft.com/help/2979596
+  [FALTA] SQLServer2008SP4-KB2979596-x86-ENU.exe
+        Directo ENU: https://download.microsoft.com/download/5/e/7/5e7a89f7-c013-4090-901e-1a0f86b6a94c/ENU/SQLServer2008SP4-KB2979596-x86-ENU.exe
+        Página oficial: https://www.microsoft.com/en-us/download/details.aspx?id=44278
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2979596
+        Información KB2979596: https://support.microsoft.com/help/2979596
+  [FALTA] SQLServer2008R2SP1-KB2528583-x64-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2528583
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2528583
+        Información KB2528583: https://support.microsoft.com/help/2528583
+  [FALTA] SQLServer2008R2SP1-KB2528583-x86-ENU.exe
+        Página oficial: https://www.catalog.update.microsoft.com/Search.aspx?q=2528583
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2528583
+        Información KB2528583: https://support.microsoft.com/help/2528583
+  [OK] SQLServer2008R2SP2-KB2630458-x64-ENU.exe
+        D:\Instaladores\SQL\Fix-SQL2008\SQL Server 2008 R2 (10.50)\ServicePacks\SP2\x64\ENU\SQLServer2008R2SP2-KB2630458-x64-ENU.exe
+  [FALTA] SQLServer2008R2SP2-KB2630458-x86-ENU.exe
+        Directo ENU: https://download.microsoft.com/download/3/d/c/3dc6663d-8a76-40a6-bcf2-2808c385d56a/SQLServer2008R2SP2-KB2630458-x86-ENU.exe
+        Página oficial: https://www.microsoft.com/en-us/download/details.aspx?id=30437
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2630458
+        Información KB2630458: https://support.microsoft.com/help/2630458
+  [OK] SQLServer2008R2SP3-KB2979597-x64-ENU.exe
+        D:\Instaladores\SQL\Fix-SQL2008\SQL Server 2008 R2 (10.50)\ServicePacks\SP3\x64\ENU\SQLServer2008R2SP3-KB2979597-x64-ENU.exe
+  [FALTA] SQLServer2008R2SP3-KB2979597-x86-ENU.exe
+        Directo ENU: https://download.microsoft.com/download/d/7/a/d7a28b6c-fcfe-4f70-a902-b109388e01e9/ENU/SQLServer2008R2SP3-KB2979597-x86-ENU.exe
+        Página oficial: https://www.microsoft.com/en-us/download/details.aspx?id=44271
+        Catálogo: https://www.catalog.update.microsoft.com/Search.aspx?q=2979597
+        Información KB2979597: https://support.microsoft.com/help/2979597
+
+DESCARGA AUTOMÁTICA:
+ - Pulsa el botón 'DESCARGAR FALTANTES' para bajar los instaladores ENU que falten.
+ - Se guardan en la carpeta existente de su SP (incluidas las heredadas) o en una carpeta nueva 'SQLServer...SPn'.
+ - No se vuelven a descargar los ficheros que ya están presentes.
+
+DIAGNÓSTICO DEL FALLO DEL SERVICE PACK Y DEL SERVICIO:
+ - SP3 intentado (KB2979597 ESN, ALLINSTANCES, x64): exit -2068643838, 'No se actualizó ninguna característica...
+   ... durante la ejecución del programa de instalación'. Causa: paquete ESN sobre instalación LCID 1033/ENU,
+   además de estar la instancia en rama QFE/CU (Setup 10.52.4000.0 frente a motor 10.50.4000.0).
+ - Servicio MSSQLSERVER: evento 5597 (FILESTREAM no inicializado) -> 912 (fallo sqlagent100_msdb_upgrade.sql)
+   -> 3417 (no se puede recuperar master). SQL Agent: evento 103, no puede conectar con '(local)'.
+ - Solución: usar el paquete ENU, pulsar 'REPARAR SERVICIO SQL' y después reiniciar.
+
+NOTAS:
+ - Los Service Packs son acumulativos: SP4 (SQL Server 2008) y SP3 (SQL Server 2008 R2) incluyen todos los anteriores.
+ - El instalador debe coincidir con la arquitectura y, sobre todo, con el idioma de la instancia instalada.
+ - Referencias: https://support.microsoft.com/help/2979596 (SP4) y https://support.microsoft.com/help/2979597 (R2 SP3)

@@ -1,0 +1,27 @@
+SQL SERVER: SQL Server 6.5
+Build principal: 6.5
+Estado de soporte: Fin de soporte (2003)
+Arquitecturas: x86
+Idiomas previstos: ENU, ESN
+
+SERVICE PACKS / ACTUALIZACIONES:
+  - SP6a
+
+NOTA: Primera generación. Solo x86. Los instaladores originales ya no están en Download Center; usar Microsoft Update Catalog / archivo.
+
+ENLACES OFICIALES:
+  Catálogo Microsoft Update : https://www.catalog.update.microsoft.com/Search.aspx?q=SQL+Server+6.5+SP6a
+  Ciclo de vida             : https://learn.microsoft.com/lifecycle/products/?terms=SQL%20Server%206.5
+  Documentación             : https://learn.microsoft.com/en-us/sql/sql-server/
+
+ESTRUCTURA:
+  RTM\                  Instalador original (sin service pack)
+  ServicePacks\         Service Packs acumulativos por arquitectura e idioma
+  CumulativeUpdates\    CU/GDR para versiones sin Service Packs
+  SecurityFixes\        Parches de seguridad independientes
+  _REPARACIONES\        Scripts y diagnosticos de errores
+  _LOGS\                Logs exportados por la herramienta
+  _DOCUMENTACION\       Fichas, KBs y enlaces oficiales
+
+RECOMENDACIÓN: instalar siempre el Service Pack/CU más alto disponible.
+Los SP son acumulativos: no hace falta instalar los anteriores.

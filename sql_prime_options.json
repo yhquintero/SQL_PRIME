@@ -1,0 +1,12 @@
+﻿{
+    "RestorePointOnStop":  true,
+    "FastMode":  true,
+    "LightsIntervalMs":  3000,
+    "RetryCount":  2,
+    "PollIntervalMs":  200,
+    "ReportBeforeAfter":  true,
+    "LogVerbosity":  "Normal",
+    "StartTimeoutSec":  30,
+    "StopTimeoutSec":  20,
+    "SimulationMode":  false
+}

@@ -1,0 +1,29 @@
+SQL PRIME | SQL SERVER: SQL Server 2008 R2
+Build principal: 10.50
+Estado de soporte: Fin de soporte (2019)
+Arquitecturas: x64, ia64
+Idiomas previstos: ENU, ESN
+
+SERVICE PACKS / ACTUALIZACIONES:
+  - SP3 (KB2979597)
+  - SP2 (KB2630458)
+  - SP1 (KB2528583)
+
+NOTA: SP3 acumulativo (KB2979597). Ojo con rama QFE/CU 10.52.x frente a GDR 10.50.x.
+
+ENLACES OFICIALES:
+  Catálogo Microsoft Update : https://www.catalog.update.microsoft.com/Search.aspx?q=2979597
+  Ciclo de vida             : https://learn.microsoft.com/lifecycle/products/?terms=SQL%20Server%202008%20R2
+  Documentación             : https://learn.microsoft.com/en-us/sql/sql-server/
+
+ESTRUCTURA:
+  RTM\                  Instalador original (sin service pack)
+  ServicePacks\         Service Packs acumulativos por arquitectura e idioma
+  CumulativeUpdates\    CU/GDR para versiones sin Service Packs
+  SecurityFixes\        Parches de seguridad independientes
+  _REPARACIONES\        Scripts y diagnosticos de errores
+  _LOGS\                Logs exportados por la herramienta
+  _DOCUMENTACION\       Fichas, KBs y enlaces oficiales
+
+RECOMENDACIÓN: instalar siempre el Service Pack/CU más alto disponible.
+Los SP son acumulativos: no hace falta instalar los anteriores.

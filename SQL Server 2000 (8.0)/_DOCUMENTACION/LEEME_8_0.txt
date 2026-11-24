@@ -1,0 +1,27 @@
+SQL SERVER: SQL Server 2000
+Build principal: 8.0
+Estado de soporte: Fin de soporte (2013)
+Arquitecturas: x86, ia64
+Idiomas previstos: ENU, ESN
+
+SERVICE PACKS / ACTUALIZACIONES:
+  - SP4
+
+NOTA: Solo x86/IA64. SP4 es la última actualización.
+
+ENLACES OFICIALES:
+  Catálogo Microsoft Update : https://www.catalog.update.microsoft.com/Search.aspx?q=SQL+Server+2000+SP4
+  Ciclo de vida             : https://learn.microsoft.com/lifecycle/products/?terms=SQL%20Server%202000
+  Documentación             : https://learn.microsoft.com/en-us/sql/sql-server/
+
+ESTRUCTURA:
+  RTM\                  Instalador original (sin service pack)
+  ServicePacks\         Service Packs acumulativos por arquitectura e idioma
+  CumulativeUpdates\    CU/GDR para versiones sin Service Packs
+  SecurityFixes\        Parches de seguridad independientes
+  _REPARACIONES\        Scripts y diagnosticos de errores
+  _LOGS\                Logs exportados por la herramienta
+  _DOCUMENTACION\       Fichas, KBs y enlaces oficiales
+
+RECOMENDACIÓN: instalar siempre el Service Pack/CU más alto disponible.
+Los SP son acumulativos: no hace falta instalar los anteriores.

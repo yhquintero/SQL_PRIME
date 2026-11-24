@@ -1,0 +1,30 @@
+SQL SERVER: SQL Server 2012
+Build principal: 11.0
+Estado de soporte: Fin de soporte (2024)
+Arquitecturas: x86, x64
+Idiomas previstos: ENU, ESN
+
+SERVICE PACKS / ACTUALIZACIONES:
+  - SP4 (KB2976987)
+  - SP3 (KB2755531)
+  - SP2 (KB2692828)
+  - SP1 (KB2679368)
+
+NOTA: SP4 acumulativo (KB2976987).
+
+ENLACES OFICIALES:
+  Catálogo Microsoft Update : https://www.catalog.update.microsoft.com/Search.aspx?q=2976987
+  Ciclo de vida             : https://learn.microsoft.com/lifecycle/products/?terms=SQL%20Server%202012
+  Documentación             : https://learn.microsoft.com/en-us/sql/sql-server/
+
+ESTRUCTURA:
+  RTM\                  Instalador original (sin service pack)
+  ServicePacks\         Service Packs acumulativos por arquitectura e idioma
+  CumulativeUpdates\    CU/GDR para versiones sin Service Packs
+  SecurityFixes\        Parches de seguridad independientes
+  _REPARACIONES\        Scripts y diagnosticos de errores
+  _LOGS\                Logs exportados por la herramienta
+  _DOCUMENTACION\       Fichas, KBs y enlaces oficiales
+
+RECOMENDACIÓN: instalar siempre el Service Pack/CU más alto disponible.
+Los SP son acumulativos: no hace falta instalar los anteriores.

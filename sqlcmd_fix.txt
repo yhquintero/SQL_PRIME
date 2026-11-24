@@ -1,0 +1,1 @@
+Server shut down by request from login SQLSERVER\usuario.

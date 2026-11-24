@@ -1,0 +1,27 @@
+SQL SERVER: SQL Server 2025
+Build principal: 17.0
+Estado de soporte: Versión más reciente
+Arquitecturas: x64
+Idiomas previstos: ENU, ESN
+
+SERVICE PACKS / ACTUALIZACIONES:
+  - CU (sin Service Pack)
+
+NOTA: Última generación. Sin Service Packs; actualizaciones acumulativas y soporte para IA/vector search.
+
+ENLACES OFICIALES:
+  Catálogo Microsoft Update : https://www.catalog.update.microsoft.com/Search.aspx?q=SQL+Server+2025+CU
+  Ciclo de vida             : https://learn.microsoft.com/lifecycle/products/?terms=SQL%20Server%202025
+  Documentación             : https://learn.microsoft.com/en-us/sql/sql-server/
+
+ESTRUCTURA:
+  RTM\                  Instalador original (sin service pack)
+  ServicePacks\         Service Packs acumulativos por arquitectura e idioma
+  CumulativeUpdates\    CU/GDR para versiones sin Service Packs
+  SecurityFixes\        Parches de seguridad independientes
+  _REPARACIONES\        Scripts y diagnosticos de errores
+  _LOGS\                Logs exportados por la herramienta
+  _DOCUMENTACION\       Fichas, KBs y enlaces oficiales
+
+RECOMENDACIÓN: instalar siempre el Service Pack/CU más alto disponible.
+Los SP son acumulativos: no hace falta instalar los anteriores.
