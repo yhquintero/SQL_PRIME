@@ -1,6 +1,5 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-24T13:15:51.5807563-04:00",
   "publisher": "SQL PRIME",
   "note": "SHA256 values are null until verified from an official Microsoft source/file. Size is used as fallback when hash is unavailable.",
   "installers": [
@@ -12,9 +11,11 @@
       "arch": "x64",
       "lang": "ENU",
       "size": 396782240,
-      "sha256": null,
+      "sha256": "29992d0d60fceeb4485918ff40041f4dddb82e3a6491437f1b8ba5c6d57d9a5f",
       "directUrl": "https://download.microsoft.com/download/5/e/7/5e7a89f7-c013-4090-901e-1a0f86b6a94c/ENU/SQLServer2008SP4-KB2979596-x64-ENU.exe",
-      "support": "https://support.microsoft.com/help/2979596"
+      "support": "https://support.microsoft.com/help/2979596",
+      "verifiedAt": "2026-11-24T15:01:35.0368617-04:00",
+      "verifiedFrom": "D:\\Proyectos\\Github\\SQL_PRIME\\Instaladores\\SQL Server 2008 (10.0)\\ServicePacks\\SP4\\x64\\ENU\\SQLServer2008SP4-KB2979596-x64-ENU.exe"
     },
     {
       "name": "SQLServer2008SP4-KB2979596-x86-ENU.exe",
@@ -39,8 +40,6 @@
       "sha256": "da6e07945bd761ae225828594c2d7b256882b56ff77388631075ba5d0bf7f127",
       "directUrl": "https://download.microsoft.com/download/3/d/c/3dc6663d-8a76-40a6-bcf2-2808c385d56a/SQLServer2008R2SP2-KB2630458-x64-ENU.exe",
       "support": "https://support.microsoft.com/help/2630458",
-      "verifiedAt": "2026-11-24T13:15:50.9943300-04:00",
-      "verifiedFrom": "D:\\Proyectos\\Github\\SQL_PRIME\\SQL Server 2008 R2 (10.50)\\ServicePacks\\SP2\\x64\\ENU\\SQLServer2008R2SP2-KB2630458-x64-ENU.exe"
     },
     {
       "name": "SQLServer2008R2SP2-KB2630458-x86-ENU.exe",
@@ -65,8 +64,6 @@
       "sha256": "0b9399fec0e9f3c9c5d7cb08e57bb96695222ab34e5ff6c0bf8d8c468356ea0f",
       "directUrl": "https://download.microsoft.com/download/d/7/a/d7a28b6c-fcfe-4f70-a902-b109388e01e9/ENU/SQLServer2008R2SP3-KB2979597-x64-ENU.exe",
       "support": "https://support.microsoft.com/help/2979597",
-      "verifiedAt": "2026-11-24T13:15:51.5774613-04:00",
-      "verifiedFrom": "D:\\Proyectos\\Github\\SQL_PRIME\\SQL Server 2008 R2 (10.50)\\ServicePacks\\SP3\\x64\\ENU\\SQLServer2008R2SP3-KB2979597-x64-ENU.exe"
     },
     {
       "name": "SQLServer2008R2SP3-KB2979597-x86-ENU.exe",
