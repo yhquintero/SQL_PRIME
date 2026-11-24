@@ -1,6 +1,5 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-24T15:01:35.9357195-04:00",
   "publisher": "SQL PRIME",
   "note": "SHA256 values are null until verified from an official Microsoft source/file. Size is used as fallback when hash is unavailable.",
   "installers": [
@@ -41,8 +40,6 @@
       "sha256": "da6e07945bd761ae225828594c2d7b256882b56ff77388631075ba5d0bf7f127",
       "directUrl": "https://download.microsoft.com/download/3/d/c/3dc6663d-8a76-40a6-bcf2-2808c385d56a/SQLServer2008R2SP2-KB2630458-x64-ENU.exe",
       "support": "https://support.microsoft.com/help/2630458",
-      "verifiedAt": "2026-11-24T15:01:35.4157717-04:00",
-      "verifiedFrom": "D:\\Proyectos\\Github\\SQL_PRIME\\Instaladores\\SQL Server 2008 R2 (10.50)\\ServicePacks\\SP2\\x64\\ENU\\SQLServer2008R2SP2-KB2630458-x64-ENU.exe"
     },
     {
       "name": "SQLServer2008R2SP2-KB2630458-x86-ENU.exe",
@@ -67,8 +64,6 @@
       "sha256": "0b9399fec0e9f3c9c5d7cb08e57bb96695222ab34e5ff6c0bf8d8c468356ea0f",
       "directUrl": "https://download.microsoft.com/download/d/7/a/d7a28b6c-fcfe-4f70-a902-b109388e01e9/ENU/SQLServer2008R2SP3-KB2979597-x64-ENU.exe",
       "support": "https://support.microsoft.com/help/2979597",
-      "verifiedAt": "2026-11-24T15:01:35.9334717-04:00",
-      "verifiedFrom": "D:\\Proyectos\\Github\\SQL_PRIME\\Instaladores\\SQL Server 2008 R2 (10.50)\\ServicePacks\\SP3\\x64\\ENU\\SQLServer2008R2SP3-KB2979597-x64-ENU.exe"
     },
     {
       "name": "SQLServer2008R2SP3-KB2979597-x86-ENU.exe",
