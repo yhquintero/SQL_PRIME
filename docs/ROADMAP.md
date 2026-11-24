@@ -36,10 +36,11 @@
 - [ ] Telemetría opt-in
 
 ## Fase 4 — Web/API HTTPS con ECC
-- [ ] Migración/re-arquitectura a **C#/.NET 8** (recomendado)
-- [ ] ASP.NET Core + Kestrel con **TLS 1.3**
-- [ ] Certificado **ECDSA P-256/P-384** (ECC), ECDHE, HSTS, CSP
+- [x] Scaffold inicial **C#/.NET 8** (`src/SQLPrime.Core`, `src/SQLPrime.Api`)
+- [x] ASP.NET Core + Kestrel con **TLS 1.3** (config base en `Program.cs`)
+- [x] Plantilla de certificado **ECDSA P-256/P-384** (ECC), HSTS, CSP (ver `docs/PHASE_3_TLS_ECC.md`)
 - [ ] Auth OIDC/MFA, RBAC, auditoría, rate limiting
+- [ ] Despliegue producción con secretos en vault/HSM
 
 ## Stack recomendado
 - **Principal**: C#/.NET 8, WinUI 3 (desktop), ASP.NET Core (web/API), MSIX.
