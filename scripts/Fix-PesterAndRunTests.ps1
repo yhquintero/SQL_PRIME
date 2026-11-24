@@ -46,64 +46,98 @@ Write-Step "Módulos Pester disponibles"
 Get-Module Pester -ListAvailable | Select-Object Name,Version,ModuleBase | Format-Table -AutoSize | Out-String | Write-Host
 
 if (-not $SkipInstall) {
-    Write-Step "Preparando instalación de Pester v5 (Scope CurrentUser)"
+    Write-Step "Preparando instalación de Pester v5"
 
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    } catch { }
+    try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { }
 
-    # Asegurar PSGallery
+    # Asegurar ruta CurrentUser
+    $userModPath = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
+    if (-not (Test-Path -LiteralPath $userModPath)) {
+        New-Item -ItemType Directory -Path $userModPath -Force | Out-Null
+        Write-Ok "Creada ruta de módulos: $userModPath"
+    }
+
+    # Asegurar PSGallery (PowerShellGet v2)
     try {
         $repo = Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
         if (-not $repo) {
-            Write-Warn2 "PSGallery no está registrado. Intentando registrar..."
             Register-PSRepository -Default -ErrorAction SilentlyContinue
             $repo = Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue
         }
         if ($repo -and $repo.InstallationPolicy -ne 'Trusted') {
-            Write-Step "Marcando PSGallery como Trusted"
             Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction SilentlyContinue
         }
-    } catch {
-        Write-Warn2 "No se pudo configurar PSGallery: $($_.Exception.Message)"
-    }
+    } catch { Write-Warn2 "PSGallery (v2): $($_.Exception.Message)" }
 
-    # Intentar instalar Pester v5
     $installed = $false
-    try {
-        Write-Step "Instalando Pester (>=5.0) en Scope CurrentUser"
-        Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber -ErrorAction Stop
-        $installed = $true
-        Write-Ok "Pester v5 instalado en CurrentUser"
-    } catch {
-        Write-Warn2 "Falló instalación en CurrentUser: $($_.Exception.Message)"
+
+    # Estrategia 1: PSResourceGet (PS7+)
+    if (-not $installed -and (Get-Command Install-PSResource -ErrorAction SilentlyContinue)) {
+        try {
+            Write-Step "Intento 1: Install-PSResource (CurrentUser)"
+            Install-PSResource -Name Pester -Scope CurrentUser -TrustRepository -Reinstall -ErrorAction Stop | Out-Null
+            $installed = $true
+            Write-Ok "Pester instalado vía Install-PSResource (CurrentUser)"
+        } catch { Write-Warn2 "Install-PSResource CurrentUser falló: $($_.Exception.Message)" }
+        if (-not $installed -and $isAdmin) {
+            try {
+                Write-Step "Intento 1b: Install-PSResource (AllUsers)"
+                Install-PSResource -Name Pester -Scope AllUsers -TrustRepository -Reinstall -ErrorAction Stop | Out-Null
+                $installed = $true
+                Write-Ok "Pester instalado vía Install-PSResource (AllUsers)"
+            } catch { Write-Warn2 "Install-PSResource AllUsers falló: $($_.Exception.Message)" }
+        }
     }
 
+    # Estrategia 2: Install-Module (PowerShellGet v2)
+    if (-not $installed) {
+        try {
+            Write-Step "Intento 2: Install-Module (CurrentUser)"
+            Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber -Repository PSGallery -ErrorAction Stop
+            $installed = $true
+            Write-Ok "Pester instalado vía Install-Module (CurrentUser)"
+        } catch { Write-Warn2 "Install-Module CurrentUser falló: $($_.Exception.Message)" }
+    }
     if (-not $installed -and $isAdmin) {
         try {
-            Write-Step "Reintentando en Scope AllUsers (Admin)"
-            Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope AllUsers -Force -SkipPublisherCheck -AllowClobber -ErrorAction Stop
+            Write-Step "Intento 2b: Install-Module (AllUsers)"
+            Install-Module -Name Pester -MinimumVersion 5.0.0 -Scope AllUsers -Force -SkipPublisherCheck -AllowClobber -Repository PSGallery -ErrorAction Stop
             $installed = $true
-            Write-Ok "Pester v5 instalado en AllUsers"
-        } catch {
-            Write-Warn2 "Falló instalación en AllUsers: $($_.Exception.Message)"
-        }
+            Write-Ok "Pester instalado vía Install-Module (AllUsers)"
+        } catch { Write-Warn2 "Install-Module AllUsers falló: $($_.Exception.Message)" }
+    }
+
+    # Estrategia 3: Save-Module + copiar a CurrentUser
+    if (-not $installed) {
+        try {
+            Write-Step "Intento 3: Save-Module + copia manual a CurrentUser"
+            $tmp = Join-Path ([IO.Path]::GetTempPath()) ("pester-save-" + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+            Save-Module -Name Pester -MinimumVersion 5.0.0 -Path $tmp -Repository PSGallery -Force -ErrorAction Stop
+            $saved = Get-ChildItem -Path $tmp -Directory | Where-Object { $_.Name -eq 'Pester' } | Select-Object -First 1
+            if (-not $saved) { throw "No se encontró carpeta Pester en Save-Module" }
+            $dest = Join-Path $userModPath 'Pester'
+            if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue }
+            Copy-Item -LiteralPath $saved.FullName -Destination $dest -Recurse -Force
+            $installed = $true
+            Write-Ok "Pester copiado a $dest"
+            Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+        } catch { Write-Warn2 "Save-Module/copia falló: $($_.Exception.Message)" }
     }
 
     if (-not $installed) {
         Write-Err "No se pudo instalar Pester v5 automáticamente."
         Write-Host @"
 
-Acciones manuales:
-1) Cierra esta ventana, abre PowerShell 7 (pwsh) como ADMINISTRADOR y ejecuta:
-   Set-PSRepository PSGallery -InstallationPolicy Trusted
-   Install-Module Pester -MinimumVersion 5.0.0 -Scope AllUsers -Force -SkipPublisherCheck -AllowClobber
+Acciones manuales (ejecutar en pwsh como ADMINISTRADOR):
+  Set-PSRepository PSGallery -InstallationPolicy Trusted
+  Install-Module Pester -MinimumVersion 5.0.0 -Scope AllUsers -Force -SkipPublisherCheck -AllowClobber
 
-2) Si sigue fallando, instala desde PowerShellGet/PSResourceGet:
-   Install-PSResource -Name Pester -Version 5.6.1 -Scope CurrentUser -TrustRepository
+Alternativa moderna (PS7+):
+  Install-PSResource -Name Pester -Scope AllUsers -TrustRepository
 
-3) Luego vuelve a ejecutar:
-   pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Fix-PesterAndRunTests.ps1 -SkipInstall
+Luego vuelve a ejecutar:
+  pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Fix-PesterAndRunTests.ps1 -SkipInstall
 "@ -ForegroundColor Yellow
         exit 1
     }
