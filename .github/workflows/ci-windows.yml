@@ -36,3 +36,15 @@ jobs:
         shell: pwsh
         run: |
           pwsh -NoProfile -File ./scripts/Validate-Catalog.ps1 -CatalogPath ./catalog/catalog.json
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: .NET restore/build/test
+        shell: pwsh
+        run: |
+          dotnet restore ./SQLPrime.sln
+          dotnet build ./SQLPrime.sln -c Release --no-restore
+          dotnet test ./SQLPrime.sln -c Release --no-build --verbosity normal

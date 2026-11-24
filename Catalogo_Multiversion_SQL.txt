@@ -1,12 +1,12 @@
 SQL PRIME - CATÁLOGO MULTIVERSIÓN DE SQL SERVER
 Estructura de actualizaciones y reparaciones · De SQL Server 6.5 a 2025
 Diagnostica. Repara. Actualiza.
-Generado: 2026-11-24 11:20:50
+Generado: 2026-11-24 15:23:30
 Raíz: D:\Proyectos\Github\SQL_PRIME
 ====================================================================================================
 
 >>> SQL Server 2008 R2 [10.50]  -  Fin de soporte (2019)
-    Ruta: D:\Proyectos\Github\SQL_PRIME\SQL Server 2008 R2 (10.50)
+    Ruta: D:\Proyectos\Github\SQL_PRIME\Instaladores\SQL Server 2008 R2 (10.50)
     Arquitecturas: x64, ia64 | Idiomas: ENU, ESN
       • SP3 KB2979597
       • SP2 KB2630458
