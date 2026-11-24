@@ -653,6 +653,7 @@ function Get-ExpectedFileName {
                     <TextBlock x:Name="TxtTitle" Text="⚡ SQL PRIME - REPAIR &amp; UPDATE CENTER" Foreground="#00FFFF" FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="15,0,0,0" TextTrimming="CharacterEllipsis"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="BtnTheme" Style="{StaticResource TitleBarButtonStyle}" Content="🎨 AUTO" Foreground="#FFFFFF" Background="Transparent" BorderThickness="0" Height="45" MinWidth="120" Margin="0,0,6,0" Cursor="Hand" FontSize="12" FontWeight="Bold" ToolTip="Cambiar tema: Oscuro / Claro / Auto"/>
+                        <Button x:Name="BtnMinimize" Style="{StaticResource TitleBarButtonStyle}" Content="&#x2212;" Foreground="White" Background="Transparent" BorderThickness="0" Width="45" Height="45" Cursor="Hand" FontSize="16" FontWeight="Bold" ToolTip="Minimizar"/>
                         <Button x:Name="BtnClose" Style="{StaticResource TitleBarCloseStyle}" Content="✕" Foreground="White" Background="Transparent" BorderThickness="0" Width="45" Height="45" Cursor="Hand" FontSize="16" ToolTip="Cerrar herramienta"/>
                     </StackPanel>
                 </Grid>
@@ -700,18 +701,21 @@ function Get-ExpectedFileName {
                     </Grid>
 
                     <!-- Barra de Progreso -->
-                    <Grid Grid.Row="3" Margin="25,4,25,8">
-                        <ProgressBar x:Name="ProgressBar" Height="24" Value="0" Maximum="100" Background="#11111A" BorderThickness="0" Foreground="#00FFFF">
-                            <ProgressBar.Template>
-                                <ControlTemplate TargetType="ProgressBar">
-                                    <Border Background="{TemplateBinding Background}" CornerRadius="12">
-                                        <Grid><Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="12" HorizontalAlignment="Left"/></Grid>
-                                    </Border>
-                                </ControlTemplate>
-                            </ProgressBar.Template>
-                        </ProgressBar>
-                        <TextBlock x:Name="TxtProgress" Text="0%" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
-                    </Grid>
+                    <StackPanel Grid.Row="3" Margin="25,4,25,4">
+                        <Grid>
+                            <ProgressBar x:Name="ProgressBar" Height="24" Value="0" Maximum="100" Background="#11111A" BorderThickness="0" Foreground="#00FFFF">
+                                <ProgressBar.Template>
+                                    <ControlTemplate TargetType="ProgressBar">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="12">
+                                            <Grid><Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="12" HorizontalAlignment="Left"/></Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ProgressBar.Template>
+                            </ProgressBar>
+                            <TextBlock x:Name="TxtProgress" Text="0%" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                        </Grid>
+                        <TextBlock x:Name="TxtDownloadStatus" Text="" Foreground="#00CCFF" FontSize="11" Margin="4,3,4,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+                    </StackPanel>
 
                     <!-- Log de Eventos (directamente bajo el estado del sistema) -->
                     <Border x:Name="PanelLog" Grid.Row="2" Margin="25,6,25,6" Background="#08080C" CornerRadius="8" BorderBrush="#00AAAA" BorderThickness="1">
@@ -876,7 +880,7 @@ $script:AllButtonNames = @(
     'BtnInventory','BtnDownload','BtnStopDownload','BtnRestart','BtnLog',
     'BtnMakeFolders','BtnCatalog','BtnOpenRoot',
     'BtnManageServices','BtnReport','BtnProfiles','BtnSchedule','BtnSimulate','BtnLogVerbosity',
-    'BtnTheme','BtnClose'
+    'BtnTheme','BtnMinimize','BtnClose'
 )
 
 function Find-AllButtons {
@@ -1023,6 +1027,7 @@ $MainShadow    = $window.FindName("MainShadow")
 $TitleBar      = $window.FindName("TitleBar")
 $TxtTitle      = $window.FindName("TxtTitle")
 $BtnTheme      = $window.FindName("BtnTheme")
+$BtnMinimize   = $window.FindName("BtnMinimize")
 $BtnClose      = $window.FindName("BtnClose")
 $TxtStatusTitle= $window.FindName("TxtStatusTitle")
 $TxtUpdateTitle= $window.FindName("TxtUpdateTitle")
@@ -1040,6 +1045,7 @@ $TxtArch       = $window.FindName("TxtArch")
 $TxtUpdate     = $window.FindName("TxtUpdate")
 $ProgressBar   = $window.FindName("ProgressBar")
 $TxtProgress   = $window.FindName("TxtProgress")
+$TxtDownloadStatus = $window.FindName("TxtDownloadStatus")
 $TxtLog        = $window.FindName("TxtLog")
 $ScrollLog     = $window.FindName("ScrollLog")
 $BtnRefresh    = $window.FindName("BtnRefresh")
@@ -1075,9 +1081,13 @@ $script:DownloadJob    = $null
 $script:DownloadResults = @()
 $script:DownloadTotal  = 0
 $script:DownloadTickHandler = $null
+$script:DownloadCurrentFile = ""
+$script:DownloadCurrentBytes = 0
+$script:DownloadCurrentTotal = 0
 $script:ReportPath     = Join-Path $PSScriptRoot "Inventario_Instaladores_SQL2008.txt"
 $script:Timer = New-Object System.Windows.Threading.DispatcherTimer
 $script:DownloadTimer = New-Object System.Windows.Threading.DispatcherTimer
+$script:DownloadTimer.Interval = [TimeSpan]::FromMilliseconds(500)
 
 # ------------------------------------------------------------------------------
 # Handler UNICO del timer de descargas. Se define fuera de Start-InstallerDownloads
@@ -1091,6 +1101,8 @@ $script:DownloadTimerTick = {
         # se llama a Receive-Job con un job nulo.
         if (-not $script:DownloadJob) {
             $script:DownloadTimer.Stop()
+            $TxtDownloadStatus.Text = ""
+            $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
             return
@@ -1099,6 +1111,8 @@ $script:DownloadTimerTick = {
         if (-not $job) {
             $script:DownloadTimer.Stop()
             $script:DownloadJob = $null
+            $TxtDownloadStatus.Text = ""
+            $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
             return
@@ -1107,17 +1121,28 @@ $script:DownloadTimerTick = {
         $newItems = @(Receive-Job -Job $job -ErrorAction SilentlyContinue)
         foreach ($r in $newItems) {
             if ($r.PSObject.Properties.Name -contains "Type" -and $r.Type -eq "PROGRESS") {
+                $script:DownloadCurrentFile  = $r.Name
+                $script:DownloadCurrentBytes = [int64]$r.Bytes
+                $script:DownloadCurrentTotal = [int64]$r.Total
                 $fraction = 0
-                if ($r.Total -gt 0) { $fraction = $r.Bytes / $r.Total }
+                if ($r.Total -gt 0) { $fraction = [double]$r.Bytes / [double]$r.Total }
                 $done = $script:DownloadResults.Count
                 $totalItems = [Math]::Max(1, $script:DownloadTotal)
-                # Mostrar porcentaje real cuando hay datos de progreso (Bytes/Total).
-                if ($fraction -gt 0 -and $totalItems -gt 0) {
-                    $pctDone = [int](100 * (($done + $fraction) / $totalItems))
-                    $ProgressBar.Value = [Math]::Min(100, $pctDone)
+                $overallPct = 0
+                if ($totalItems -gt 0) {
+                    $overallPct = [int](100 * (($done + $fraction) / $totalItems))
+                    $ProgressBar.Value = [Math]::Min(100, $overallPct)
                 } else {
                     $ProgressBar.Value = [Math]::Min(95, [int](5 + 90 * ($done / $totalItems)))
                 }
+                $filePct = if ($r.Total -gt 0) { [math]::Round(100 * $r.Bytes / $r.Total, 1) } else { 0 }
+                $mbNow   = [math]::Round($r.Bytes / 1MB, 1)
+                $mbTot   = if ($r.Total -gt 0) { [math]::Round($r.Total / 1MB, 1) } else { 0 }
+                $fileIdx = $done + 1
+                $status  = "Descargando $fileIdx/$($script:DownloadTotal): $($r.Name) - $filePct% ($mbNow / $mbTot MB)"
+                $TxtDownloadStatus.Text = $status
+                $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Visible
+                $TxtProgress.Text = "$([int][math]::Floor($filePct))%"
                 continue
             }
             $script:DownloadResults += $r
@@ -1139,6 +1164,12 @@ $script:DownloadTimerTick = {
             Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
             $script:DownloadJob = $null
             $ProgressBar.Value = 100
+            $TxtProgress.Text = "100%"
+            $TxtDownloadStatus.Text = ""
+            $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
+            $script:DownloadCurrentFile = ""
+            $script:DownloadCurrentBytes = 0
+            $script:DownloadCurrentTotal = 0
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
             $ok = @($script:DownloadResults | Where-Object { $_.Status -eq "OK" }).Count
@@ -1149,6 +1180,9 @@ $script:DownloadTimerTick = {
         # Un solo aviso por sesion: nunca se repite el error del timer.
         $script:DownloadTimer.Stop()
         $script:DownloadJob = $null
+        $TxtDownloadStatus.Text = ""
+        $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
+        $script:DownloadCurrentFile = ""
         $BtnDownload.IsEnabled = $true
         $BtnStopDownload.IsEnabled = $false
         if (-not $script:DownloadWarningShown) {
@@ -1220,6 +1254,7 @@ function Apply-Theme {
         $TitleBar.Background = $bc.ConvertFromString("#11111A")
         $TxtTitle.Foreground = $borderBrush
         $BtnTheme.Foreground = $textColor
+        $BtnMinimize.Foreground = $textColor
         $BtnClose.Foreground = $textColor
         $TxtMainHeader.Foreground = $bc.ConvertFromString("#FF00FF")
         $HeaderShadow.Color = $cc.ConvertFromString("#FF00FF")
@@ -1227,6 +1262,7 @@ function Apply-Theme {
         $TxtStatusTitle.Foreground = $bc.ConvertFromString("#00CCFF")
         $TxtUpdateTitle.Foreground = $bc.ConvertFromString("#FFAA00")
         $TxtVersionLabel.Foreground = $borderBrush
+        if ($TxtDownloadStatus) { $TxtDownloadStatus.Foreground = $bc.ConvertFromString("#00CCFF") }
         
         $PanelStatus.Background = $panelBg
         $PanelUpdate.Background = $panelBg
@@ -1277,6 +1313,7 @@ function Apply-Theme {
         $TitleBar.Background = $bc.ConvertFromString("#E1E5EA")
         $TxtTitle.Foreground = $borderBrush
         $BtnTheme.Foreground = $textColor
+        $BtnMinimize.Foreground = $textColor
         $BtnClose.Foreground = $textColor
         $TxtMainHeader.Foreground = $bc.ConvertFromString("#D80073")
         $HeaderShadow.Color = $cc.ConvertFromString("#D80073")
@@ -1284,6 +1321,7 @@ function Apply-Theme {
         $TxtStatusTitle.Foreground = $bc.ConvertFromString("#00695C")
         $TxtUpdateTitle.Foreground = $bc.ConvertFromString("#A04000")
         $TxtVersionLabel.Foreground = $borderBrush
+        if ($TxtDownloadStatus) { $TxtDownloadStatus.Foreground = $bc.ConvertFromString("#005A9E") }
 
         $PanelStatus.Background = $panelBg
         $PanelUpdate.Background = $panelBg
@@ -1920,28 +1958,25 @@ function Start-InstallerDownloads {
     $script:DownloadTimer.Stop()
     $script:DownloadWarningShown = $false
 
+    # Refrescar inventario para no omitir ficheros ya presentes o .part recientes.
+    $script:Inventory = Get-InstallerInventory
+
     $info = $script:DetectedInfo
     $lang = if ($info.LanguageCode) { $info.LanguageCode } elseif ($script:PreferredLang) { $script:PreferredLang } else { "ENU" }
     $major = if ($info.MajorVersion) { $info.MajorVersion } else { "10.50" }
-    $currentSP = 0
-    if ($info.SPLevel -match 'SP(\d+)') { $currentSP = [int]$matches[1] }
 
-    $defs = @($script:SPDefinitions | Where-Object {
-        $_.Major -eq $major -and $_.SPNumber -gt $currentSP -and (Get-DirectUrl -Definition $_ -Arch "x64" -Lang $lang)
-    } | Sort-Object SPNumber -Descending)
+    # Descargar TODAS las versiones faltantes con URL directa verificada
+    # (ambas familias 10.0 y 10.50), no solo los SP superiores al actual.
+    $defs = @($script:SPDefinitions | Sort-Object Major, SPNumber)
 
-    Update-UI -Log "=== DESCARGAR INSTALADORES $lang PARA $major ===" -LogColor "#FF00FF"
-    if ($defs.Count -eq 0) {
-        Update-UI -Log "No hay SPs superiores con URL directa verificada. Usa los enlaces del informe (INVENTARIO / DESCARGAS)." -LogColor "#FFAA00"
-        return
-    }
+    Update-UI -Log "=== DESCARGAR INSTALADORES FALTANTES ($lang) ===" -LogColor "#FF00FF"
 
     $targets = @()
+    $missingNoDirect = @()
     foreach ($def in $defs) {
         $family = if ($def.Major -eq "10.50") { "SQLServer2008R2" } else { "SQLServer2008" }
         foreach ($arch in @("x64", "x86")) {
             $url = Get-DirectUrl -Definition $def -Arch $arch -Lang $lang
-            if (-not $url) { continue }
             $name = Get-ExpectedFileName -MajorVersion $def.Major -SPNumber $def.SPNumber -Arch $arch -Lang $lang
 
             # Elegir la carpeta exacta (SP + arquitectura + idioma). Asi los .part
@@ -1973,7 +2008,7 @@ function Start-InstallerDownloads {
                     # Descarga anterior incompleta: se marca como .part para reanudar.
                     try {
                         Move-Item -LiteralPath $finalPath -Destination $partPath -Force -ErrorAction Stop
-                        Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará." -LogColor "#FFFF00"
+                        Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $name" -LogColor "#FFFF00"
                     } catch {
                         Update-UI -Log "No se pudo marcar '$name' como parcial (puede estar en uso): $($_.Exception.Message)" -LogColor "#FF0000"
                         continue
@@ -1982,6 +2017,12 @@ function Start-InstallerDownloads {
                     Update-UI -Log "[OK] Ya existe: $finalPath" -LogColor "#00FF00"
                     continue
                 }
+            }
+
+            if (-not $url) {
+                $missingNoDirect += $name
+                Update-UI -Log "[SIN URL DIRECTA] $name - usa el catálogo/enlace del informe." -LogColor "#FFAA00"
+                continue
             }
 
             $resumeBytes = 0
@@ -2003,17 +2044,31 @@ function Start-InstallerDownloads {
             }
         }
     }
+    if ($missingNoDirect.Count -gt 0) {
+        Update-UI -Log "Faltan $($missingNoDirect.Count) fichero(s) sin URL directa verificada; revisa INVENTARIO / DESCARGAS para los enlaces oficiales." -LogColor "#FFAA00"
+    }
 
     if ($targets.Count -eq 0) {
-        Update-UI -Log "No faltan instaladores $lang de los SPs recomendados." -LogColor "#00FF00"
+        Update-UI -Log "No faltan instaladores $lang con URL directa verificada, o ya están presentes." -LogColor "#00FF00"
+        $TxtDownloadStatus.Text = "No hay descargas pendientes. Todos los instaladores con URL directa verificada están presentes."
+        $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Visible
+        $ProgressBar.Value = 0
+        $TxtProgress.Text = "0%"
         return
     }
 
     $script:DownloadResults = @()
     $script:DownloadTotal = $targets.Count
+    $script:DownloadCurrentFile = ""
+    $script:DownloadCurrentBytes = 0
+    $script:DownloadCurrentTotal = 0
     $ProgressBar.Value = 5
+    $TxtProgress.Text = "5%"
     $BtnDownload.IsEnabled = $false
     $BtnStopDownload.IsEnabled = $true
+    $pendingNames = @($targets | ForEach-Object { $_.Name }) -join " | "
+    $TxtDownloadStatus.Text = "En cola ($($targets.Count)): $pendingNames"
+    $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Visible
 
     # Descarga a ".part" con cabecera Range: se puede detener y reanudar.
     $script:DownloadJob = Start-Job -ScriptBlock {
@@ -2053,6 +2108,8 @@ function Start-InstallerDownloads {
                 $written = $start
                 $total = $start + [int64]$resp.ContentLength
                 $nextReport = $start + 10485760
+                # Emitir progreso inicial para que la UI muestre % inmediatamente (incluye reanudaciones).
+                [pscustomobject]@{ Type="PROGRESS"; Name=$item.Name; Bytes=$written; Total=$total }
 
                 while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
                     $fs.Write($buffer, 0, $read)
@@ -2107,6 +2164,9 @@ function Stop-InstallerDownloads {
     $script:DownloadTimer.Stop()
     $BtnDownload.IsEnabled = $true
     $BtnStopDownload.IsEnabled = $false
+    $TxtDownloadStatus.Text = "Descarga detenida. Los ficheros .part se conservan para reanudar."
+    $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Visible
+    $script:DownloadCurrentFile = ""
     if (-not $script:DownloadWarningShown) {
         $script:DownloadWarningShown = $true
         Update-UI -Log "AVISO: existe una descarga incompleta (.part). Al pulsar DESCARGAR FALTANTES se continuará desde el último byte." -LogColor "#FFAA00"
@@ -2839,6 +2899,7 @@ $BtnTheme.Add_Click({
     Save-Config
     Update-UI -Log "Tema cambiado a $($script:ThemeLabels[$script:CurrentTheme])." -LogColor "#00CCFF"
 })
+$BtnMinimize.Add_Click({ $window.WindowState = 'Minimized' })
 $BtnClose.Add_Click({ $window.Close() })
 
 # Atajos de teclado profesionales: Esc cierra, F5 refresca el estado.
