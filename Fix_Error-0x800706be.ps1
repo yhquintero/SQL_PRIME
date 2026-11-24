@@ -176,7 +176,7 @@ $script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\In
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
-        try { . $mp } catch { Write-Warning "No se pudo cargar $m: $($_.Exception.Message)" }
+        try { . $mp } catch { Write-Warning "No se pudo cargar ${m}: $($_.Exception.Message)" }
     }
 }
 try { $null = Get-SQLPrimeConfig -BaseDir $PSScriptRoot; Initialize-SQLPrimeLogging -BaseDir (Join-Path $PSScriptRoot 'modules') } catch { }
