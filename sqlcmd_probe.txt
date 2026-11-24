@@ -1,2 +1,5 @@
-Msg 18461, Level 14, State 1, Server SQLSERVER, Line 1
-Login failed for user 'SQLSERVER\usuario'. Reason: Server is in single user mode. Only one administrator can connect at this time.
+           
+-----------
+          1
+
+(1 rows affected)
