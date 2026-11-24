@@ -8,9 +8,12 @@
 - [x] Logging estructurado JSONL con rotación (`modules/Logging.ps1`)
 - [x] Verificación de integridad SHA-256 para descargas (`modules/Integrity.ps1`)
 - [x] Catálogo base de instaladores con tamaños/hashes (`catalog/catalog.json`)
-- [ ] Tests Pester para parsing/inventario/descargas
-- [ ] Separación completa UI/Core del script monolítico
-- [ ] Firma Authenticode y verificación de origen
+- [x] Tests Pester iniciales (Config/Integrity/ErrorHandling) en `tests/`
+- [ ] Separación completa UI/Core del script monolítico (en progreso: módulos Fase 0 extraídos)
+- [x] Verificación Authenticode (módulo + warning/confirmación antes de actualizar SP)
+
+- [x] Manejo de errores estandarizado + `operationId` en descargas (`modules/ErrorHandling.ps1`)
+- [x] Script para poblar SHA256 desde archivos locales (`scripts/Update-CatalogHashes.ps1`)
 
 ## Fase 1 — UX/UI premium
 - [ ] Design system (tokens, iconos SVG, estados)
