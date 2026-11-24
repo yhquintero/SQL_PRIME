@@ -171,8 +171,8 @@ function Save-Config {
     $cfg | ConvertTo-Json | Out-File -FilePath $ConfigPath -Encoding utf8 -Force
 }
 
-# Módulos Fase 0 (fundación): config, logging estructurado, integridad.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1')
+# Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
@@ -181,6 +181,7 @@ foreach ($m in $script:Phase0Modules) {
 }
 try { $null = Get-SQLPrimeConfig -BaseDir $PSScriptRoot; Initialize-SQLPrimeLogging -BaseDir (Join-Path $PSScriptRoot 'modules') } catch { }
 $script:KnownHashes = @{}
+$script:DownloadOperationId = '' 
 
 # Modulo con TODAS las mejoras avanzadas (Bloques A-F). Se carga antes de la GUI
 # para que sus funciones ya existan cuando se enlacen los eventos de los botones.
@@ -1164,10 +1165,10 @@ $script:DownloadTimerTick = {
                 $hashStr = ''
                 try { if ($r.PSObject.Properties.Name -contains 'Sha256' -and $r.Sha256) { $hashStr = " | SHA256: $($r.Sha256)" } } catch { }
                 Update-UI -Log "$mode`: $($r.Name) ($([math]::Round($r.Bytes / 1MB, 1)) MB$pctStr) -> $($r.Path)$hashStr" -LogColor "#00FF00"
-                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -Message "Download completed: $($r.Name)" -Data @{ name=$r.Name; path=$r.Path; bytes=$r.Bytes; resumed=$r.Resumed; sha256=$r.Sha256; hashChecked=$r.HashChecked } } } catch { }
+                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message "Download completed: $($r.Name)" -Data @{ name=$r.Name; path=$r.Path; bytes=$r.Bytes; resumed=$r.Resumed; sha256=$r.Sha256; hashChecked=$r.HashChecked } } } catch { }
             } else {
                 Update-UI -Log "FALLO: $($r.Name) - $($r.Message)" -LogColor "#FF0000"
-                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level ERROR -Component 'download' -Message "Download failed: $($r.Name)" -Data @{ name=$r.Name; message=$r.Message } } } catch { }
+                try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level ERROR -Component 'download' -OperationId $script:DownloadOperationId -Message "Download failed: $($r.Name)" -Data @{ name=$r.Name; message=$r.Message } } } catch { }
             }
             if ($script:DownloadTotal -gt 0) {
                 $ProgressBar.Value = [Math]::Min(95, 5 + [int](90 * $script:DownloadResults.Count / $script:DownloadTotal))
@@ -1984,7 +1985,9 @@ function Start-InstallerDownloads {
     # (ambas familias 10.0 y 10.50), no solo los SP superiores al actual.
     $defs = @($script:SPDefinitions | Sort-Object Major, SPNumber)
 
-    Update-UI -Log "=== DESCARGAR INSTALADORES FALTANTES ($lang) ===" -LogColor "#FF00FF"
+    $script:DownloadOperationId = if (Get-Command New-SQLPrimeOperationId -ErrorAction SilentlyContinue) { New-SQLPrimeOperationId } else { [guid]::NewGuid().ToString() }
+    Update-UI -Log "=== DESCARGAR INSTALADORES FALTANTES ($lang) === [op:$($script:DownloadOperationId)]" -LogColor "#FF00FF"
+    try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message 'Download operation started' -Data @{ lang=$lang; major=$major } } } catch { }
 
     $targets = @()
     $missingNoDirect = @()
@@ -3113,6 +3116,22 @@ $BtnUpdate.Add_Click({
             return
         }
     }
+    # Fase 0: verificación Authenticode antes de ejecutar instalador.
+    if (Get-Command Test-SQLPrimeAuthenticode -ErrorAction SilentlyContinue) {
+        $sig = Test-SQLPrimeAuthenticode -Path $script:InstallerPath
+        if ($sig.Supported -and -not $sig.IsTrusted) {
+            $sigWarn = "La firma Authenticode NO es confiable para:`n$($script:InstallerPath)`n`nEstado: $($sig.Status)`nPublisher: $($sig.Publisher)`n$($sig.Message)`n`n¿Ejecutar de todos modos?"
+            $sq = [System.Windows.MessageBox]::Show($sigWarn, "Advertencia de firma", "YesNo", "Warning")
+            if ($sq -ne "Yes") { Update-UI -Log "Actualización cancelada: firma Authenticode no confiable." -LogColor "#FFAA00"; return }
+            Update-UI -Log "Usuario confirmó ejecución pese a advertencia de firma: $($sig.Status)" -LogColor "#FFAA00"
+        } elseif ($sig.Supported -and $sig.IsTrusted) {
+            Update-UI -Log "Firma Authenticode verificada: $($sig.Publisher)" -LogColor "#00FF00"
+        } else {
+            Update-UI -Log "Authenticode no verificado en este entorno: $($sig.Message)" -LogColor "#FFAA00"
+        }
+        try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level AUDIT -Component 'update' -OperationId $script:DownloadOperationId -Message 'Authenticode check' -Data @{ path=$script:InstallerPath; status=$sig.Status; trusted=$sig.IsTrusted; publisher=$sig.Publisher } } } catch { }
+    }
+
     Update-UI -Log "=== INICIANDO ACTUALIZACIÓN DE SERVICE PACK ===" -LogColor "#FF00FF"
     $BtnUpdate.IsEnabled = $false
     $ProgressBar.Value = 5
