@@ -172,7 +172,7 @@ function Save-Config {
 }
 
 # Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1')
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
@@ -1421,37 +1421,18 @@ function Get-SQLServerInfo {
         $info.LanguageCode = Get-LanguageCode -Lcid $info.Language
         $info.LanguageName = Get-LanguageDisplayName -Lcid $info.Language -Code $info.LanguageCode
         if ($version) {
-            $parts = $version.Split('.')
-            $major = "$($parts[0]).$($parts[1])"
-            $build = [int]$parts[2]
-            $info.MajorVersion = $major
-            $info.Build = $version
-            
-            # Lógica exacta para detectar el SP
-            if ($major -eq "10.0") {
-                $info.ProductName = "SQL Server 2008"
-                if ($build -ge 6000) { $info.SPLevel = "SP4" }
-                elseif ($build -ge 5500) { $info.SPLevel = "SP3" }
-                elseif ($build -ge 4000) { $info.SPLevel = "SP2" }
-                elseif ($build -ge 2531) { $info.SPLevel = "SP1" }
-                else { $info.SPLevel = "RTM" }
-            } elseif ($major -eq "10.50") {
-                $info.ProductName = "SQL Server 2008 R2"
-                if ($build -ge 6000) { $info.SPLevel = "SP3" }
-                elseif ($build -ge 4000) { $info.SPLevel = "SP2" }
-                elseif ($build -ge 2500) { $info.SPLevel = "SP1" }
-                else { $info.SPLevel = "RTM" }
+            $buildInfo = if (Get-Command Resolve-SQLBuildInfo -ErrorAction SilentlyContinue) {
+                Resolve-SQLBuildInfo -Build $version -BuildMap @($script:SQLBuildMap)
+            } else { $null }
+            if ($buildInfo) {
+                $info.MajorVersion = $buildInfo.MajorVersion
+                $info.Build = $buildInfo.Build
+                $info.ProductName = $buildInfo.ProductName
+                $info.SPLevel = $buildInfo.SPLevel
             } else {
-                # Detección genérica para el resto de versiones del catálogo.
-                $map = $script:SQLBuildMap | Where-Object { $_.Prefix -eq $major } | Select-Object -First 1
-                if ($map) {
-                    $info.ProductName = $map.Name
-                    $spFound = $map.SPs | Where-Object { $build -ge $_.Min } | Select-Object -First 1
-                    $info.SPLevel = if ($spFound) { $spFound.Label } else { "RTM" }
-                } else {
-                    $info.ProductName = "SQL Server $major"
-                    $info.SPLevel = "Build $build"
-                }
+                $parts = $version.Split('.')
+                $info.MajorVersion = "$($parts[0]).$($parts[1])"
+                $info.Build = $version
             }
         }
     }
@@ -1459,9 +1440,10 @@ function Get-SQLServerInfo {
     if (Test-Path $setupKey) {
         $setupProps = Get-ItemProperty -Path $setupKey
         $info.Edition = $setupProps.Edition
-        # Version de MSI: distingue rama GDR (10.50.x) de rama QFE/CU (10.52.x).
         $info.ProductVersion = "$($setupProps.Version)"
-        if ($info.MajorVersion -and $info.ProductVersion -match '^(\d+)\.(\d+)\.') {
+        if (Get-Command Test-SQLPrimeQfeBranch -ErrorAction SilentlyContinue) {
+            $info.IsQFE = [bool](Test-SQLPrimeQfeBranch -MajorVersion $info.MajorVersion -ProductVersion $info.ProductVersion)
+        } elseif ($info.MajorVersion -and $info.ProductVersion -match '^(\d+)\.(\d+)\.') {
             $msiMajor = "$($matches[1]).$($matches[2])"
             $info.IsQFE = ($msiMajor -ne $info.MajorVersion)
         }
@@ -1755,80 +1737,78 @@ function Start-InstallerDownloads {
     Update-UI -Log "=== DESCARGAR INSTALADORES FALTANTES ($lang) === [op:$($script:DownloadOperationId)]" -LogColor "#FF00FF"
     try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message 'Download operation started' -Data @{ lang=$lang; major=$major } } } catch { }
 
+    # Construcción de objetivos: usa módulo Download si está disponible (Fase 0).
+    $targetPlan = $null
+    if (Get-Command Get-SQLPrimeDownloadTargets -ErrorAction SilentlyContinue) {
+        $targetPlan = Get-SQLPrimeDownloadTargets -Definitions $defs -Lang $lang -BaseDir $PSScriptRoot -Inventory $script:Inventory -KnownSizes $script:KnownSizes `
+            -GetDirectUrl { param($d,$a,$l) Get-DirectUrl -Definition $d -Arch $a -Lang $l } `
+            -GetExpectedFileName { param($maj,$sp,$a,$l) Get-ExpectedFileName -MajorVersion $maj -SPNumber $sp -Arch $a -Lang $l }
+    }
+
     $targets = @()
     $missingNoDirect = @()
-    foreach ($def in $defs) {
-        $family = if ($def.Major -eq "10.50") { "SQLServer2008R2" } else { "SQLServer2008" }
-        foreach ($arch in @("x64", "x86")) {
-            $url = Get-DirectUrl -Definition $def -Arch $arch -Lang $lang
-            $name = Get-ExpectedFileName -MajorVersion $def.Major -SPNumber $def.SPNumber -Arch $arch -Lang $lang
-
-            # Elegir la carpeta exacta (SP + arquitectura + idioma). Asi los .part
-            # se reanudan en su idioma correcto y no se mezclan ENU con ESN.
-            $sameFile = @($script:Inventory | Where-Object {
-                $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber -and
-                $_.Arch -eq $arch -and $_.Lang -eq $lang
-            })
-            $versionFolder = if ($def.Major -eq "10.50") { "SQL Server 2008 R2 (10.50)" } else { "SQL Server 2008 (10.0)" }
-            $installersRoot = Join-Path $PSScriptRoot "Instaladores"
-            $structuredDir = Join-Path $installersRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
-            $sameSP = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber })
-            $folderPath = if ($sameFile.Count -gt 0) {
-                $sameFile[0].FolderPath
-            } elseif (Test-Path -LiteralPath $structuredDir) {
-                $structuredDir
-            } elseif ($sameSP.Count -gt 0) {
-                $sameSP[0].FolderPath
-            } else {
-                Join-Path $installersRoot "$($family)SP$($def.SPNumber)"
-            }
-
-            $finalPath = Join-Path $folderPath $name
-            $partPath  = "$finalPath.part"
-            $expectedSize = Get-KnownSize -Name $name
-
-            if (Test-Path -LiteralPath $finalPath) {
-                $actual = (Get-Item -LiteralPath $finalPath).Length
-                if ($expectedSize -gt 0 -and $actual -lt $expectedSize) {
-                    # Descarga anterior incompleta: se marca como .part para reanudar.
-                    try {
-                        Move-Item -LiteralPath $finalPath -Destination $partPath -Force -ErrorAction Stop
-                        Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $name" -LogColor "#FFFF00"
-                    } catch {
-                        Update-UI -Log "No se pudo marcar '$name' como parcial (puede estar en uso): $($_.Exception.Message)" -LogColor "#FF0000"
-                        continue
-                    }
-                } else {
-                    Update-UI -Log "[OK] Ya existe: $finalPath" -LogColor "#00FF00"
+    if ($targetPlan) {
+        foreach ($n in @($targetPlan.AlreadyPresent)) { Update-UI -Log "[OK] Ya existe: $n" -LogColor "#00FF00" }
+        foreach ($n in @($targetPlan.MissingNoDirect)) {
+            $missingNoDirect += $n
+            Update-UI -Log "[SIN URL DIRECTA] $n - usa el catálogo/enlace del informe." -LogColor "#FFAA00"
+        }
+        foreach ($t in @($targetPlan.Targets)) {
+            # Mover final incompleto a .part para reanudar (comportamiento existente).
+            if ($t.IncompleteFinal -and (Test-Path -LiteralPath $t.FinalPath)) {
+                try {
+                    $actual = (Get-Item -LiteralPath $t.FinalPath).Length
+                    Move-Item -LiteralPath $t.FinalPath -Destination $t.Path -Force -ErrorAction Stop
+                    $t.ResumeBytes = [int64](Get-Item -LiteralPath $t.Path).Length
+                    Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $($t.Name)" -LogColor "#FFFF00"
+                } catch {
+                    Update-UI -Log "No se pudo marcar '$($t.Name)' como parcial (puede estar en uso): $($_.Exception.Message)" -LogColor "#FF0000"
                     continue
                 }
             }
-
-            if (-not $url) {
-                $missingNoDirect += $name
-                Update-UI -Log "[SIN URL DIRECTA] $name - usa el catálogo/enlace del informe." -LogColor "#FFAA00"
-                continue
-            }
-
-            $resumeBytes = 0
-            if (Test-Path -LiteralPath $partPath) { $resumeBytes = [int64](Get-Item -LiteralPath $partPath).Length }
+            if (Test-Path -LiteralPath $t.Path) { $t.ResumeBytes = [int64](Get-Item -LiteralPath $t.Path).Length }
             $expectedHash = $null
-            try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $name } } catch { }
+            try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $t.Name } } catch { }
             $targets += [pscustomobject]@{
-                Name           = $name
-                Url            = $url
-                Path           = $partPath
-                FinalPath      = $finalPath
-                Dir            = $folderPath
-                SP             = $def.SP
-                ResumeBytes    = $resumeBytes
-                ExpectedSize   = $expectedSize
-                ExpectedSha256 = $expectedHash
+                Name=$t.Name; Url=$t.Url; Path=$t.Path; FinalPath=$t.FinalPath; Dir=$t.Dir; SP=$t.SP;
+                ResumeBytes=$t.ResumeBytes; ExpectedSize=$t.ExpectedSize; ExpectedSha256=$expectedHash
             }
-            if ($resumeBytes -gt 0) {
-                Update-UI -Log "Pendiente: $name -> $folderPath (REANUDAR desde $([math]::Round($resumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00"
+            if ($t.ResumeBytes -gt 0) {
+                Update-UI -Log "Pendiente: $($t.Name) -> $($t.Dir) (REANUDAR desde $([math]::Round($t.ResumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00"
             } else {
-                Update-UI -Log "Pendiente: $name -> $folderPath (nueva)" -LogColor "#FFFF00"
+                Update-UI -Log "Pendiente: $($t.Name) -> $($t.Dir) (nueva)" -LogColor "#FFFF00"
+            }
+        }
+    } else {
+        # Fallback legacy si el módulo Download no está cargado.
+        foreach ($def in $defs) {
+            $family = if ($def.Major -eq "10.50") { "SQLServer2008R2" } else { "SQLServer2008" }
+            foreach ($arch in @("x64", "x86")) {
+                $url = Get-DirectUrl -Definition $def -Arch $arch -Lang $lang
+                $name = Get-ExpectedFileName -MajorVersion $def.Major -SPNumber $def.SPNumber -Arch $arch -Lang $lang
+                $sameFile = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber -and $_.Arch -eq $arch -and $_.Lang -eq $lang })
+                $versionFolder = if ($def.Major -eq "10.50") { "SQL Server 2008 R2 (10.50)" } else { "SQL Server 2008 (10.0)" }
+                $installersRoot = Join-Path $PSScriptRoot "Instaladores"
+                $structuredDir = Join-Path $installersRoot "$versionFolder\ServicePacks\SP$($def.SPNumber)\$arch\$lang"
+                $sameSP = @($script:Inventory | Where-Object { $_.Major -eq $def.Major -and $_.SPNumber -eq $def.SPNumber })
+                $folderPath = if ($sameFile.Count -gt 0) { $sameFile[0].FolderPath } elseif (Test-Path -LiteralPath $structuredDir) { $structuredDir } elseif ($sameSP.Count -gt 0) { $sameSP[0].FolderPath } else { Join-Path $installersRoot "$($family)SP$($def.SPNumber)" }
+                $finalPath = Join-Path $folderPath $name
+                $partPath  = "$finalPath.part"
+                $expectedSize = Get-KnownSize -Name $name
+                if (Test-Path -LiteralPath $finalPath) {
+                    $actual = (Get-Item -LiteralPath $finalPath).Length
+                    if ($expectedSize -gt 0 -and $actual -lt $expectedSize) {
+                        try { Move-Item -LiteralPath $finalPath -Destination $partPath -Force -ErrorAction Stop; Update-UI -Log "Fichero incompleto detectado ($([math]::Round($actual / 1MB, 1)) MB); se reanudará: $name" -LogColor "#FFFF00" }
+                        catch { Update-UI -Log "No se pudo marcar '$name' como parcial: $($_.Exception.Message)" -LogColor "#FF0000"; continue }
+                    } else { Update-UI -Log "[OK] Ya existe: $finalPath" -LogColor "#00FF00"; continue }
+                }
+                if (-not $url) { $missingNoDirect += $name; Update-UI -Log "[SIN URL DIRECTA] $name - usa el catálogo/enlace del informe." -LogColor "#FFAA00"; continue }
+                $resumeBytes = 0
+                if (Test-Path -LiteralPath $partPath) { $resumeBytes = [int64](Get-Item -LiteralPath $partPath).Length }
+                $expectedHash = $null
+                try { if (Get-Command Get-SQLPrimeKnownHash -ErrorAction SilentlyContinue) { $expectedHash = Get-SQLPrimeKnownHash -Name $name } } catch { }
+                $targets += [pscustomobject]@{ Name=$name; Url=$url; Path=$partPath; FinalPath=$finalPath; Dir=$folderPath; SP=$def.SP; ResumeBytes=$resumeBytes; ExpectedSize=$expectedSize; ExpectedSha256=$expectedHash }
+                if ($resumeBytes -gt 0) { Update-UI -Log "Pendiente: $name -> $folderPath (REANUDAR desde $([math]::Round($resumeBytes / 1MB, 1)) MB)" -LogColor "#FFFF00" } else { Update-UI -Log "Pendiente: $name -> $folderPath (nueva)" -LogColor "#FFFF00" }
             }
         }
     }
@@ -2034,45 +2014,7 @@ function Export-RegistryKeyBackup {
     }
 }
 
-# Lista única de servicios SQL de la instancia (instalados o no). Get-Service
-# se encarga de descartar los que no existen en este servidor.
-function Get-SQLServiceCandidates {
-    param([string]$Instance)
-
-    $isDefault = ($Instance -ieq "MSSQLSERVER")
-    $suffix = if ($isDefault) { "" } else { "`$$Instance" }
-    # El motor con nombre se llama MSSQL$INST (no MSSQLSERVER$INST).
-    $engine = if ($isDefault) { "MSSQLSERVER" } else { "MSSQL`$$Instance" }
-    $agent  = if ($isDefault) { "SQLSERVERAGENT" } else { "SQLSERVERAGENT`$$Instance" }
-    $filestream = if ($isDefault) { "MSSQLFDLauncher" } else { "MSSQLFDLauncher`$$Instance" }
-    return @(
-        $engine,
-        $agent,
-        $filestream,
-        "SQLBrowser",
-        "SQLWriter",
-        "MSSQLServerOLAPService$suffix",
-        "MSSQLServerOLAPService",
-        "ReportServer$suffix",
-        "ReportServer",
-        "MsDtsServer100", "MsDtsServer110", "MsDtsServer120",
-        "MsDtsServer130", "MsDtsServer140", "MsDtsServer150",
-        "SQLServerIntegrationServices$suffix",
-        "SQLServerDistributedReplayController",
-        "SQLServerDistributedReplayClient"
-    ) | Select-Object -Unique
-}
-
-# Una sola llamada a Get-Service para TODOS los candidatos: evita decenas de
-# consultas al Service Control Manager y es la base del modo rápido (Bloque G).
-function Get-SQLServiceStates {
-    param([string]$Instance)
-    $map = @{}
-    foreach ($s in @(Get-Service -Name @(Get-SQLServiceCandidates -Instance $Instance) -ErrorAction SilentlyContinue)) {
-        if ($null -ne $s -and $s.Name) { $map[$s.Name] = $s }
-    }
-    return $map
-}
+# Get-SQLServiceCandidates / Get-SQLServiceStates movidos a modules/Services.ps1 (Fase 0).
 
 # Inicia TODOS los servicios relacionados con SQL Server: motor, Agent,
 # FILESTREAM, Browser, VSS Writer, SSAS, SSRS, SSIS y Distributed Replay.

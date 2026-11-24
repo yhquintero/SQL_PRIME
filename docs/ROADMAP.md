@@ -9,7 +9,7 @@
 - [x] Verificación de integridad SHA-256 para descargas (`modules/Integrity.ps1`)
 - [x] Catálogo base de instaladores con tamaños/hashes (`catalog/catalog.json`)
 - [x] Tests Pester iniciales (Config/Integrity/ErrorHandling/Catalog/Authenticode) en `tests/`
-- [ ] Separación completa UI/Core del script monolítico (en progreso: Config/Logging/Integrity/ErrorHandling/Authenticode/Catalog/Inventory extraídos)
+- [ ] Separación completa UI/Core del script monolítico (en progreso: Config/Logging/Integrity/ErrorHandling/Authenticode/Catalog/Inventory/Services/Detection/Download extraídos; Download target builder integrado en `Start-InstallerDownloads`; pendiente UI/Theme, Repair completo, flujo Download/Repair UI-coupled)
 - [x] Verificación Authenticode (módulo + warning/confirmación; política estricta configurable `security.verifyAuthenticode`)
 
 - [x] Manejo de errores estandarizado + `operationId` en descargas (`modules/ErrorHandling.ps1`)

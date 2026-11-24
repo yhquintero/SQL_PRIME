@@ -31,6 +31,8 @@ foreach ($i in @($c.installers)) {
     if ($i.sha256) {
         if ([string]$i.sha256 -notmatch '^[a-fA-F0-9]{64}$') { $errors.Add("Invalid sha256: $($i.name)") }
     }
+    if ($i.directUrl -and [string]$i.directUrl -notmatch '^https://') { $errors.Add("directUrl must be https: $($i.name)") }
+    if ($i.support -and [string]$i.support -notmatch '^https://') { $errors.Add("support must be https: $($i.name)") }
 }
 
 if ($errors.Count -gt 0) {
