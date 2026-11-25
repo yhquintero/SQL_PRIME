@@ -180,6 +180,21 @@ foreach ($m in $script:Phase0Modules) {
     }
 }
 try { $null = Get-SQLPrimeConfig -BaseDir $PSScriptRoot; Initialize-SQLPrimeLogging -BaseDir (Join-Path $PSScriptRoot 'modules') } catch { }
+
+# i18n: idioma activo desde configuracion (ES por defecto) y mapa de recursos.
+$script:UiLanguage = 'es'
+try {
+    if ($script:SQLPrimeConfig -and $script:SQLPrimeConfig.ui -and $script:SQLPrimeConfig.ui.language) {
+        $script:UiLanguage = [string]$script:SQLPrimeConfig.ui.language
+    }
+} catch { }
+$script:I18nMap = @{}
+try {
+    if (Get-Command Get-SQLPrimeI18n -ErrorAction SilentlyContinue) {
+        $script:I18nMap = Get-SQLPrimeI18n -BaseDir $PSScriptRoot -Language $script:UiLanguage
+    }
+} catch { }
+
 $script:KnownHashes = @{}
 $script:DownloadOperationId = '' 
 
