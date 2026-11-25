@@ -172,7 +172,7 @@ function Save-Config {
 }
 
 # Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1','modules\Wizard.ps1','modules\I18n.ps1')
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1','modules\Wizard.ps1','modules\I18n.ps1','modules\DesignSystem.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
@@ -1161,6 +1161,10 @@ function Set-SQLPrimeProgressPalette {
     if ($null -eq $window -or $null -eq $window.Resources['ProgressFillBrush']) { return }
     $palette = if ($Dark) { @('#00F5FF', '#7C4DFF', '#FF3DFF') } else { @('#0284C7', '#6366F1', '#D946EF') }
     try {
+        if (Get-Command Get-SQLPrimeDesignTokens -ErrorAction SilentlyContinue) {
+            $tokens = Get-SQLPrimeDesignTokens -Theme $(if ($Dark) { 'Dark' } else { 'Light' }) -BaseDir $PSScriptRoot
+            if ($null -ne $tokens -and $tokens.progress.Count -eq 3) { $palette = @($tokens.progress) }
+        }
         $window.Resources['ProgressFillBrush'] = New-SQLPrimeProgressBrush -Palette $palette
     } catch { }
 }

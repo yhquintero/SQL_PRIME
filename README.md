@@ -151,6 +151,17 @@ Los colores del degradado se ajustan desde `Apply-Theme` (`Fix_Error-0x800706be.
 
 ---
 
+## 🧭 Mejora continua (P0/P1 aplicado)
+
+- **Design system**: tokens centralizados en `config/design-system.json`, consumidos por la UI y los reportes.
+- **Telemetría local**: `scripts/New-SQLPrimeTelemetryDashboard.ps1` genera un dashboard con sparklines SVG a partir de `logs/sql_prime.jsonl` (sin enviar datos a ningún servicio).
+- **Dry-run**: al activar `SIMULACIÓN` se genera automáticamente un HTML con el diff planeado (estado actual → acción) y la instrucción de rollback por servicio.
+- **Calidad**: nuevos tests de integración cubren reanudación `.part`, final incompleto, tamaño desconocido e inventario previo.
+
+El backlog completo y los próximos aspectos a superar están en [`docs/CONTINUOUS_IMPROVEMENT.md`](docs/CONTINUOUS_IMPROVEMENT.md).
+
+---
+
 ## 🗺️ Roadmap
 
 El roadmap vivo está en [`docs/ROADMAP.md`](docs/ROADMAP.md).

@@ -23,6 +23,11 @@
 - [ ] Centro de descargas completo: ETA/velocidad/pause-per-file/cola persistente (base: progreso + reanudación `.part`)
 - [x] Reporte HTML base: `scripts/New-SQLPrimeReport.ps1` (falta antes/después + PDF)
 - [x] Barras de progreso futuristas: degradado/glow en UI WPF y modal, KPIs con barras animadas en reportes (`New-SQLPrimeReport.ps1` y `Export-SQLPrimeReport`)
+- [x] Design system centralizado (`config/design-system.json`, `modules/DesignSystem.ps1`) para tokens de UI/CSS
+- [x] Telemetría local con sparklines SVG (`scripts/New-SQLPrimeTelemetryDashboard.ps1`)
+- [x] Dry-run con diff y rollback al activar SIMULACIÓN (`New-SQLPrimeDryRunPreview`)
+- [x] Tests de integración con proveedor de URL simulado y estados `.part` (`tests/DownloadIntegration.Tests.ps1`)
+- [ ] Backlog extendido de mejora continua: [`docs/CONTINUOUS_IMPROVEMENT.md`](CONTINUOUS_IMPROVEMENT.md)
 - [x] i18n scaffold: `modules/I18n.ps1`, `config/i18n/es.json`, `config/i18n/en.json` (falta integración UI)
 - [ ] Accesibilidad completa (teclado, contraste, lector de pantalla)
 

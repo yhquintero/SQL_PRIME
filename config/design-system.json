@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "themes": {
+    "Dark": {
+      "accent": "#00FFFF",
+      "accentAlt": "#FF00FF",
+      "info": "#00CCFF",
+      "progress": ["#00F5FF", "#7C4DFF", "#FF3DFF"],
+      "semantic": {
+        "ok": "#00FF88",
+        "warn": "#FFAA00",
+        "error": "#FF5555",
+        "sim": "#FF00FF",
+        "info": "#00CCFF"
+      },
+      "surface": {
+        "bg": "#0D0D14",
+        "panel": "#1A1A2A",
+        "log": "#08080C"
+      }
+    },
+    "Light": {
+      "accent": "#005A9E",
+      "accentAlt": "#D80073",
+      "info": "#005A9E",
+      "progress": ["#0284C7", "#6366F1", "#D946EF"],
+      "semantic": {
+        "ok": "#00796B",
+        "warn": "#A04000",
+        "error": "#C62828",
+        "sim": "#8E24AA",
+        "info": "#005A9E"
+      },
+      "surface": {
+        "bg": "#F4F6F9",
+        "panel": "#FFFFFF",
+        "log": "#FFFFFF"
+      }
+    }
+  },
+  "css": {
+    "variables": {
+      "--bg": "#070b18",
+      "--panel": "#0f172a",
+      "--line": "#22304d",
+      "--txt": "#e6f1ff",
+      "--muted": "#93a4c3",
+      "--cyan": "#22d3ee",
+      "--violet": "#8b5cf6",
+      "--pink": "#f472b6",
+      "--green": "#34d399",
+      "--amber": "#fbbf24",
+      "--red": "#fb7185"
+    }
+  }
+}

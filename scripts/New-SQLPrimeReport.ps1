@@ -24,6 +24,10 @@ function Get-SQLPrimePercent {
     return [int][math]::Round((100 * $Numerator) / $Denominator)
 }
 
+$designModule = Join-Path $BaseDir 'modules\DesignSystem.ps1'
+if (Test-Path -LiteralPath $designModule) { . $designModule }
+$cssVars = ConvertTo-SQLPrimeCssVariables -BaseDir $BaseDir
+
 $catalogPath = Join-Path $BaseDir 'catalog\catalog.json'
 if (-not (Test-Path -LiteralPath $catalogPath)) { throw "catalog.json not found: $catalogPath" }
 $catalog = Get-Content -LiteralPath $catalogPath -Raw | ConvertFrom-Json
@@ -74,7 +78,7 @@ $html = @"
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SQL PRIME · Reporte de cobertura</title>
 <style>
-:root{--bg:#070b18;--panel:#0f172a;--line:#22304d;--txt:#e6f1ff;--muted:#93a4c3;--cyan:#22d3ee;--violet:#8b5cf6;--pink:#f472b6;--green:#34d399;--amber:#fbbf24;--red:#fb7185}
+:root{$cssVars}
 *{box-sizing:border-box}
 body{font-family:Segoe UI,Segoe UI Emoji,Arial,sans-serif;margin:0;padding:32px 24px;color:var(--txt);background:radial-gradient(1000px 520px at 12% -10%,rgba(34,211,238,.14),transparent 60%),radial-gradient(900px 500px at 100% 0%,rgba(244,114,182,.10),transparent 55%),var(--bg)}
 .shell{max-width:1120px;margin:0 auto}

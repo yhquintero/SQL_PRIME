@@ -69,16 +69,87 @@ function Test-SQLPrimeSimulation {
     return [bool]$script:Options.SimulationMode
 }
 
+function New-SQLPrimeDryRunPreview {
+    param(
+        [string]$Instance = 'MSSQLSERVER',
+        [string]$OutputPath = ''
+    )
+
+    $names = @()
+    try { $names = @(Get-SQLServiceCandidates -Instance $Instance) } catch { $names = @('MSSQLSERVER','SQLSERVERAGENT','SQLWriter','SQLBrowser') }
+
+    $cssVars = '--bg:#070b18;--panel:#0f172a;--line:#22304d;--muted:#93a4c3;--cyan:#22d3ee;--violet:#8b5cf6;--pink:#f472b6;--green:#34d399;--amber:#fbbf24;--red:#fb7185'
+    try { if (Get-Command ConvertTo-SQLPrimeCssVariables -ErrorAction SilentlyContinue) { $cssVars = ConvertTo-SQLPrimeCssVariables } } catch { }
+
+    $installedCount = 0
+    $potentialChanges = 0
+    $rows = foreach ($name in $names) {
+        $svc = Get-Service -Name $name -ErrorAction SilentlyContinue
+        $installed = [bool]$svc
+        $current = if ($svc) { [string]$svc.Status } else { 'NO INSTALADO' }
+        $startPlan = if (-not $installed) { 'sin acción' } elseif ($svc.Status -eq 'Running') { 'ya activo' } else { "$current → Running" }
+        $stopPlan = if (-not $installed) { 'sin acción' } elseif ($svc.Status -eq 'Stopped') { 'ya detenido' } else { "$current → Stopped" }
+        $rollback = if ($installed) { 'revertir al estado actual' } else { 'no aplica' }
+        if ($installed) { $installedCount++ }
+        if ($installed -and $svc.Status -ne 'Running') { $potentialChanges++ }
+        $tone = if ($current -eq 'Running') { 'ok' } elseif ($current -eq 'Stopped') { 'warn' } else { 'bad' }
+        "<tr><td>$(([System.Net.WebUtility]::HtmlEncode([string]$name)))</td><td><span class='badge $tone'>$current</span></td><td>$(([System.Net.WebUtility]::HtmlEncode($startPlan)))</td><td>$(([System.Net.WebUtility]::HtmlEncode($stopPlan)))</td><td>$rollback</td></tr>"
+    }
+
+    if (-not $OutputPath) {
+        $outDir = Join-Path $PSScriptRoot 'reports'
+        if (-not (Test-Path -LiteralPath $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
+        $OutputPath = Join-Path $outDir ("SQL_PRIME_DryRun_{0}.html" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
+    }
+
+    $doc = @"
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SQL PRIME · Dry-run</title>
+<style>
+:root{$cssVars}
+*{box-sizing:border-box}
+body{font-family:Segoe UI,Segoe UI Emoji,Arial,sans-serif;margin:0;padding:28px 20px;color:var(--txt);background:radial-gradient(900px 460px at 8% -10%,rgba(139,92,246,.16),transparent 60%),var(--bg)}
+.shell{max-width:1050px;margin:0 auto}header,.panel{border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(150deg,var(--panel),#0b1224);box-shadow:0 0 28px rgba(34,211,238,.07)}
+.kicker{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan);font-weight:700}h1{margin:8px 0 5px;font-size:25px;background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}.muted{color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.card{border:1px solid var(--line);border-radius:13px;padding:14px;background:#0b1224}.card .label{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted)}.card .metric{font-size:24px;font-weight:800;margin-top:5px}
+.bar{height:9px;border-radius:999px;background:#080f20;overflow:hidden;margin-top:9px;box-shadow:inset 0 0 0 1px rgba(139,92,246,.28)}.bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--pink));box-shadow:0 0 14px rgba(139,92,246,.6)}
+table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;font-size:12px}th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em;border-bottom-color:var(--violet)}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase}.badge.ok{color:var(--green);background:rgba(52,211,153,.12)}.badge.warn{color:var(--amber);background:rgba(251,191,36,.12)}.badge.bad{color:var(--red);background:rgba(251,113,133,.12)}
+code{color:var(--cyan);font-family:Consolas,monospace;font-size:11px}@media(max-width:760px){.cards{grid-template-columns:1fr}}
+</style></head><body><div class="shell">
+<header><div class="kicker">SQL PRIME · Safe preview</div><h1>Plan de ejecución (dry-run)</h1><p class="muted">Instancia: $([System.Net.WebUtility]::HtmlEncode($Instance)) · Generado: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') · No se ha modificado ningún servicio.</p></header>
+<section class="cards"><div class="card"><div class="label">Servicios instalados</div><div class="metric">$installedCount / $($names.Count)</div><div class="bar"><i style="width:$(if($names.Count){[int](100*$installedCount/$names.Count)}else{0})%"></i></div></div>
+<div class="card"><div class="label">Cambios potenciales al iniciar</div><div class="metric">$potentialChanges</div><div class="detail">Estados distintos de Running</div></div>
+<div class="card"><div class="label">Rollback</div><div class="metric">Disponible</div><div class="detail">Cada fila indica cómo revertir al estado actual</div></div></section>
+<section class="panel"><h2>Diff planeado: estado actual → acción</h2><table><tr><th>Servicio</th><th>Estado actual</th><th>Si ejecutas Iniciar</th><th>Si ejecutas Detener</th><th>Rollback</th></tr>
+$($rows -join "`n")</table></section>
+<p class="muted">Esta vista se genera automáticamente al activar <code>SIMULACIÓN</code>. Las operaciones reales siguen requiriendo confirmación.</p>
+</div></body></html>
+"@
+    [System.IO.File]::WriteAllText($OutputPath, $doc, (New-Object System.Text.UTF8Encoding($false)))
+    return $OutputPath
+}
+
 function Set-SQLPrimeSimulation {
     param([bool]$Enabled)
     Set-SQLPrimeOption -Name 'SimulationMode' -Value $Enabled
     $btn = $window.FindName('BtnSimulate')
     if ($null -ne $btn) {
         $btn.Content = if ($Enabled) { '🧪 SIMULACIÓN: ON' } else { '🧪 SIMULACIÓN: OFF' }
-        $btn.Background = if ($Enabled) { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FF00FF') } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#4455AA') }
+        $simColor = '#FF00FF'
+        try {
+            if (Get-Command Get-SQLPrimeDesignTokens -ErrorAction SilentlyContinue) {
+                $tokens = Get-SQLPrimeDesignTokens -Theme 'Dark'
+                if ($null -ne $tokens) { $simColor = [string]$tokens.semantic.sim }
+            }
+        } catch { }
+        $btn.Background = if ($Enabled) { [System.Windows.Media.BrushConverter]::new().ConvertFromString($simColor) } else { [System.Windows.Media.BrushConverter]::new().ConvertFromString('#4455AA') }
     }
     if ($Enabled) {
         Update-UI -Log 'MODO SIMULACIÓN ACTIVADO: no se detendrá ni iniciará ningún servicio; se mostrará lo que se haría.' -LogColor '#FF00FF'
+        try {
+            $previewPath = New-SQLPrimeDryRunPreview
+            if ($previewPath) { Update-UI -Log "[SIMULACIÓN] Vista previa con diff y rollback: $previewPath" -LogColor '#FF00FF' }
+        } catch { Update-UI -Log "No se pudo generar la vista previa dry-run: $($_.Exception.Message)" -LogColor '#FFAA00' }
     } else {
         Update-UI -Log 'Modo simulación desactivado: las operaciones se ejecutarán normalmente.' -LogColor '#00FF00'
     }
@@ -251,10 +322,12 @@ function Export-SQLPrimeReport {
         $hInstance = & $enc $Instance
         $hMachine  = & $enc $env:COMPUTERNAME
         $elapsed = if ($script:ProgressStopwatch) { $script:ProgressStopwatch.Elapsed.ToString('hh\:mm\:ss') } else { 'no disponible' }
+        $cssVars = '--bg:#070b18;--panel:#0f172a;--line:#22304d;--txt:#e6f1ff;--muted:#93a4c3;--cyan:#22d3ee;--violet:#8b5cf6;--pink:#f472b6;--green:#34d399;--amber:#fbbf24;--red:#fb7185'
+        try { if (Get-Command ConvertTo-SQLPrimeCssVariables -ErrorAction SilentlyContinue) { $cssVars = ConvertTo-SQLPrimeCssVariables } } catch { }
         $doc = @"
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SQL PRIME - Informe de Servicios</title>
 <style>
-:root{--bg:#070b18;--panel:#0f172a;--line:#22304d;--muted:#93a4c3;--cyan:#22d3ee;--violet:#8b5cf6;--pink:#f472b6;--green:#34d399;--amber:#fbbf24}
+:root{$cssVars}
 *{box-sizing:border-box}
 body{font-family:Segoe UI,Segoe UI Emoji,Arial,sans-serif;margin:0;padding:30px 22px;color:#e6f1ff;background:radial-gradient(900px 480px at 10% -10%,rgba(34,211,238,.14),transparent 60%),var(--bg)}
 .shell{max-width:1080px;margin:0 auto}
