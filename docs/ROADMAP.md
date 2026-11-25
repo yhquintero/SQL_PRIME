@@ -22,6 +22,7 @@
 - [x] Wizard state machine base: `modules/Wizard.ps1` + tests (falta integración UI WPF)
 - [ ] Centro de descargas completo: ETA/velocidad/pause-per-file/cola persistente (base: progreso + reanudación `.part`)
 - [x] Reporte HTML base: `scripts/New-SQLPrimeReport.ps1` (falta antes/después + PDF)
+- [x] Barras de progreso futuristas: degradado/glow en UI WPF y modal, KPIs con barras animadas en reportes (`New-SQLPrimeReport.ps1` y `Export-SQLPrimeReport`)
 - [x] i18n scaffold: `modules/I18n.ps1`, `config/i18n/es.json`, `config/i18n/en.json` (falta integración UI)
 - [ ] Accesibilidad completa (teclado, contraste, lector de pantalla)
 

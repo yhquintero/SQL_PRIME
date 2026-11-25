@@ -44,6 +44,8 @@ El proyecto cubre flujos críticos como detección de instancia, inventario de i
 | Reparación | Reparación WMI, servicios SQL, flujos guiados de recuperación | ✅ |
 | Seguridad operativa | Confirmaciones para acciones críticas, modo simulación, auditoría local | ✅/En progreso |
 | Catálogo | Definiciones de SP/KB, URLs directas/catálogo, base versionada `catalog/catalog.json` | ✅ |
+| UI/HUD | Barras de progreso con degradado neón (cian → violeta → magenta), glow y marco reactivo por estado en Dark/Light | ✅ |
+| Reportes | Reporte de cobertura y de servicios con KPIs, mini-barras por fila y barras futuristas animadas | ✅ |
 
 ---
 
@@ -131,6 +133,21 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 | Tamaño esperado | Validación contra tamaño conocido cuando existe |
 | SHA256 | Se calcula siempre al completar; se valida si `catalog/catalog.json` tiene hash |
 | Resultado | OK / FALLA con motivo en UI y log estructurado |
+
+---
+
+## 🎛️ Indicadores futuristas
+
+La experiencia visual se unificó en las cuatro superficies donde el usuario sigue una operación:
+
+| Superficie | Indicador | Detalle |
+|---|---|---|
+| Ventana principal | Barra global de descarga/reparación | Relleno `LinearGradientBrush` cian `#00F5FF` → violeta `#7C4DFF` → magenta `#FF3DFF`, brillo superior y glow; porcentaje centrado con sombra para legibilidad |
+| Modal de servicios | Barra por operación + marco semántico | El borde adopta el color del paso (éxito, aviso, error) y mantiene ETA/contador/cronómetro |
+| Reporte HTML | KPIs + mini-barras | Cobertura de inventario, hashes SHA-256 y salud por instalador; animación *sheen* que respeta `prefers-reduced-motion` |
+| Informe de servicios | Antes/Después | Barras de servicios activos y continuidad, además de la barra por snapshot |
+
+Los colores del degradado se ajustan desde `Apply-Theme` (`Fix_Error-0x800706be.ps1`), por lo que el tema claro mantiene contraste con una paleta azul/índigo/fucsia sin perder el estilo HUD.
 
 ---
 

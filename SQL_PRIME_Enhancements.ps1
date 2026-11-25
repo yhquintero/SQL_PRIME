@@ -237,19 +237,61 @@ function Export-SQLPrimeReport {
         $enc = { param($v) [System.Net.WebUtility]::HtmlEncode([string]$v) }
         $rows = foreach ($s in $script:Snapshots) {
             $color = if ($s.Status -eq 'Running') { '#00AA00' } elseif ($s.Status -eq 'Stopped') { '#AA6600' } else { '#888888' }
-            "<tr><td>$(& $enc $s.Phase)</td><td>$(& $enc $s.Time)</td><td>$(& $enc $s.Service)</td><td style='color:$color;font-weight:bold'>$(& $enc $s.Status)</td><td>$(& $enc $s.StartType)</td><td>$(& $enc $s.Instance)</td></tr>"
+            $health = if ($s.Status -eq 'Running') { 100 } elseif ($s.Status -eq 'Stopped') { 50 } else { 0 }
+            $tone = if ($health -eq 100) { 'ok' } elseif ($health -eq 50) { 'warn' } else { 'bad' }
+            "<tr><td>$(& $enc $s.Phase)</td><td>$(& $enc $s.Time)</td><td>$(& $enc $s.Service)</td><td style='color:$color;font-weight:bold'>$(& $enc $s.Status)</td><td><div class='mini'><i class='$tone' style='width:$health%'></i></div><small>$health%</small></td><td>$(& $enc $s.StartType)</td><td>$(& $enc $s.Instance)</td></tr>"
         }
+
+        $beforeSnap = @($script:Snapshots | Where-Object { $_.Phase -eq 'ANTES' })
+        $afterSnap = @($script:Snapshots | Where-Object { $_.Phase -eq 'DESPUES' })
+        $beforeRunning = @($beforeSnap | Where-Object { $_.Status -eq 'Running' }).Count
+        $afterRunning = @($afterSnap | Where-Object { $_.Status -eq 'Running' }).Count
+        $runningPct = if ($afterSnap.Count -gt 0) { [int][math]::Round(100 * $afterRunning / $afterSnap.Count) } else { 0 }
+        $continuityPct = if ($beforeRunning -gt 0) { [Math]::Min(100, [int][math]::Round(100 * $afterRunning / $beforeRunning)) } else { 100 }
         $hInstance = & $enc $Instance
         $hMachine  = & $enc $env:COMPUTERNAME
         $elapsed = if ($script:ProgressStopwatch) { $script:ProgressStopwatch.Elapsed.ToString('hh\:mm\:ss') } else { 'no disponible' }
         $doc = @"
-<!doctype html><html lang="es"><head><meta charset="utf-8"><title>SQL PRIME - Informe de Servicios</title>
-<style>body{background:#0D0D14;color:#DDD;font-family:Segoe UI;margin:24px}h1{color:#00FFFF}h2{color:#FF00FF}
-table{border-collapse:collapse;width:100%;background:#14141F}th,td{border:1px solid #333355;padding:6px 10px;text-align:left;font-size:13px}th{background:#222233;color:#00FFFF}</style>
-</head><body><h1>SQL PRIME - Informe de Servicios</h1><h2>Instancia: $hInstance</h2>
-<p>Generado: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | Equipo: $hMachine | Tiempo de la última operación: $elapsed</p>
-<table><tr><th>Fase</th><th>Hora</th><th>Servicio</th><th>Estado</th><th>Inicio</th><th>Instancia</th></tr>
-$($rows -join "`n")</table></body></html>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SQL PRIME - Informe de Servicios</title>
+<style>
+:root{--bg:#070b18;--panel:#0f172a;--line:#22304d;--muted:#93a4c3;--cyan:#22d3ee;--violet:#8b5cf6;--pink:#f472b6;--green:#34d399;--amber:#fbbf24}
+*{box-sizing:border-box}
+body{font-family:Segoe UI,Segoe UI Emoji,Arial,sans-serif;margin:0;padding:30px 22px;color:#e6f1ff;background:radial-gradient(900px 480px at 10% -10%,rgba(34,211,238,.14),transparent 60%),var(--bg)}
+.shell{max-width:1080px;margin:0 auto}
+header,.panel{border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(150deg,var(--panel),#0b1224);box-shadow:0 0 30px rgba(34,211,238,.07)}
+.kicker{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan);font-weight:700}
+h1{margin:8px 0 6px;font-size:25px;background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:14px;margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan)}
+p{color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.card{border:1px solid var(--line);border-radius:13px;padding:14px;background:#0b1224}
+.card .label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.card .metric{font-size:24px;font-weight:800;margin:6px 0 2px}
+.bar{height:9px;border-radius:999px;background:#080f20;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(139,92,246,.28);margin-top:9px}
+.bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--violet) 55%,var(--pink));box-shadow:0 0 14px rgba(139,92,246,.6)}
+.bar.alt>i{background:linear-gradient(90deg,var(--green),var(--cyan));box-shadow:0 0 14px rgba(52,211,153,.55)}
+table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;font-size:12px}th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em;border-bottom-color:var(--violet)}
+tr:hover td{background:rgba(34,211,238,.035)}
+.mini{width:74px;height:7px;border-radius:999px;background:#080f20;display:inline-block;vertical-align:middle;overflow:hidden}
+.mini>i{display:block;height:100%;border-radius:999px}.mini>i.ok{background:linear-gradient(90deg,var(--green),var(--cyan))}.mini>i.warn{background:linear-gradient(90deg,var(--amber),var(--pink))}.mini>i.bad{background:#3b1d2c}
+td small{color:var(--muted);margin-left:6px}
+@media(max-width:760px){.cards{grid-template-columns:1fr}}
+@media print{body{background:#fff;color:#111}.card,header,.panel{box-shadow:none;background:#fff}}
+</style>
+</head><body><div class="shell">
+<header><div class="kicker">SQL PRIME · Before / After telemetry</div>
+<h1>Informe de servicios</h1>
+<p>Instancia: $hInstance · Generado: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') · Equipo: $hMachine · Última operación: $elapsed</p>
+</header>
+<section class="cards">
+  <div class="card"><div class="label">Activos después</div><div class="metric">$afterRunning / $($afterSnap.Count)</div><div class="bar"><i style="width:$runningPct%"></i></div></div>
+  <div class="card"><div class="label">Continuidad</div><div class="metric">$continuityPct%</div><div class="bar alt"><i style="width:$continuityPct%"></i></div></div>
+  <div class="card"><div class="label">Snapshots</div><div class="metric">$($script:Snapshots.Count)</div><div class="detail">ANTES + DESPUÉS + operaciones intermedias</div></div>
+</section>
+<section class="panel"><h2>Detalle de snapshots</h2>
+<table><tr><th>Fase</th><th>Hora</th><th>Servicio</th><th>Estado</th><th>Salud</th><th>Inicio</th><th>Instancia</th></tr>
+$($rows -join "`n")</table></section>
+</div></body></html>
 "@
         [System.IO.File]::WriteAllText($html, $doc, (New-Object System.Text.UTF8Encoding($false)))
         Update-UI -Log "[REPORTE] CSV: $csv" -LogColor '#00FF00'

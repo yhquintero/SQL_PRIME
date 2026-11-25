@@ -419,6 +419,14 @@ function Show-VersionCatalog {
         <SolidColorBrush x:Key="ItemSelectedBg" Color="#173A4A"/>
         <SolidColorBrush x:Key="ItemSelectedFg" Color="#00FFFF"/>
 
+        <!-- Barra de progreso futurista: Apply-Theme ajusta los 3 stops según Dark/Light.
+             Se usa con DynamicResource para que el cambio de tema repinte el relleno. -->
+        <LinearGradientBrush x:Key="ProgressFillBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#00F5FF" Offset="0"/>
+            <GradientStop Color="#7C4DFF" Offset="0.5"/>
+            <GradientStop Color="#FF3DFF" Offset="1"/>
+        </LinearGradientBrush>
+
         <!-- Botón de tema: hover con fondo redondeado y letra de acento -->
         <Style x:Key="TitleBarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -587,13 +595,28 @@ function Show-VersionCatalog {
                             <ProgressBar x:Name="ProgressBar" Height="24" Value="0" Maximum="100" Background="#11111A" BorderThickness="0" Foreground="#00FFFF">
                                 <ProgressBar.Template>
                                     <ControlTemplate TargetType="ProgressBar">
-                                        <Border Background="{TemplateBinding Background}" CornerRadius="12">
-                                            <Grid><Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="12" HorizontalAlignment="Left"/></Grid>
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="12" BorderBrush="#2A2A45" BorderThickness="1">
+                                            <Grid>
+                                                <Border x:Name="PART_Indicator" CornerRadius="12" HorizontalAlignment="Left" Background="{DynamicResource ProgressFillBrush}">
+                                                    <Border.Effect><DropShadowEffect Color="#8B5CF6" BlurRadius="12" ShadowDepth="0" Opacity="0.65"/></Border.Effect>
+                                                    <!-- Brillo superior para dar profundidad "HUD" al relleno -->
+                                                    <Border Opacity="0.22" CornerRadius="12" IsHitTestVisible="False">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                                <GradientStop Color="#FFFFFF" Offset="0"/>
+                                                                <GradientStop Color="#000000" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+                                                </Border>
+                                            </Grid>
                                         </Border>
                                     </ControlTemplate>
                                 </ProgressBar.Template>
                             </ProgressBar>
-                            <TextBlock x:Name="TxtProgress" Text="0%" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
+                            <TextBlock x:Name="TxtProgress" Text="0%" Foreground="#FFFFFF" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12">
+                                <TextBlock.Effect><DropShadowEffect Color="#000000" BlurRadius="2" ShadowDepth="0" Opacity="0.85"/></TextBlock.Effect>
+                            </TextBlock>
                         </Grid>
                         <TextBlock x:Name="TxtDownloadStatus" Text="" Foreground="#00CCFF" FontSize="11" Margin="4,3,4,0" TextWrapping="Wrap" Visibility="Collapsed"/>
                     </StackPanel>
@@ -716,6 +739,15 @@ try {
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         Foreground="#FFFFFF" FontFamily="Segoe UI, Segoe UI Emoji">
+    <Window.Resources>
+        <!-- Mismo lenguaje visual que la barra principal; el marco cambia con el estado de cada paso. -->
+        <LinearGradientBrush x:Key="ModalProgressFillBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#00F5FF" Offset="0"/>
+            <GradientStop Color="#7C4DFF" Offset="0.5"/>
+            <GradientStop Color="#FF3DFF" Offset="1"/>
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="PgbFrameBrush" Color="#00F5FF"/>
+    </Window.Resources>
     <Border CornerRadius="10" Background="#14141F" BorderBrush="#00FFFF" BorderThickness="2">
         <Border.Effect><DropShadowEffect Color="#00FFFF" BlurRadius="18" ShadowDepth="0" Opacity="0.7"/></Border.Effect>
         <Grid Margin="16">
@@ -739,10 +771,24 @@ try {
                 </ScrollViewer>
             </Border>
             <StackPanel Grid.Row="4" Margin="0,10,0,0">
-                <Grid>
-                    <ProgressBar x:Name="PgbBar" Height="16" Minimum="0" Maximum="100" Value="0" Background="#11111A" Foreground="#00FFFF"/>
-                    <TextBlock x:Name="PgbPercent" Text="0%" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11"/>
-                </Grid>
+                <Border x:Name="PgbBarFrame" CornerRadius="10" Padding="1" BorderThickness="1" BorderBrush="{DynamicResource PgbFrameBrush}" Background="#11111A">
+                    <Grid>
+                        <ProgressBar x:Name="PgbBar" Height="16" Minimum="0" Maximum="100" Value="0" Background="#11111A" Foreground="#00FFFF">
+                            <ProgressBar.Template>
+                                <ControlTemplate TargetType="ProgressBar">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="9">
+                                        <Border x:Name="PART_Indicator" CornerRadius="9" HorizontalAlignment="Left" Background="{DynamicResource ModalProgressFillBrush}">
+                                            <Border.Effect><DropShadowEffect Color="#8B5CF6" BlurRadius="9" ShadowDepth="0" Opacity="0.7"/></Border.Effect>
+                                        </Border>
+                                    </Border>
+                                </ControlTemplate>
+                            </ProgressBar.Template>
+                        </ProgressBar>
+                        <TextBlock x:Name="PgbPercent" Text="0%" Foreground="#FFFFFF" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11">
+                            <TextBlock.Effect><DropShadowEffect Color="#000000" BlurRadius="2" ShadowDepth="0" Opacity="0.85"/></TextBlock.Effect>
+                        </TextBlock>
+                    </Grid>
+                </Border>
                 <Button x:Name="PgbCancel" Content="⏹ CANCELAR OPERACIÓN" Height="30" Margin="0,8,0,0" HorizontalAlignment="Right" Background="#8B1A1A" Foreground="#FFFFFF" FontWeight="Bold" FontSize="11" Cursor="Hand" ToolTip="Detener la operación en curso de forma segura"/>
             </StackPanel>
         </Grid>
@@ -851,6 +897,11 @@ function Update-ServiceProgressModal {
     param([string]$Service, [string]$Status, [int]$Done = 0, [int]$Total = 0, [string]$Color = '#FFFFFF')
     if ($null -eq $script:ProgressWindow) { return }
     try {
+        # El marco de la barra adopta el color semántico del paso (éxito/aviso/error).
+        # Se reemplaza el recurso (no se muta) porque WPF puede congelar el brush al aplicar el template.
+        if ($null -ne $script:ProgressWindow.Resources['PgbFrameBrush']) {
+            $script:ProgressWindow.Resources['PgbFrameBrush'] = ([System.Windows.Media.BrushConverter]::new()).ConvertFromString($Color)
+        }
         if ($Service) {
             $tb = New-Object System.Windows.Controls.TextBlock
             $tb.Text = "  • $Service : $Status"
@@ -1086,6 +1137,34 @@ function Register-DownloadTimerTick {
 # ==============================================================================
 # 5. MOTOR DE TEMAS
 # ==============================================================================
+# Paleta de la barra de progreso: WPF congela los GradientStop cuando aplica el
+# template, así que se reemplaza el brush completo enlazado con DynamicResource.
+function New-SQLPrimeProgressBrush {
+    param([string[]]$Palette)
+
+    $brush = [System.Windows.Media.LinearGradientBrush]::new()
+    $brush.StartPoint = [System.Windows.Point]::new(0, 0)
+    $brush.EndPoint = [System.Windows.Point]::new(1, 0)
+    $converter = [System.Windows.Media.ColorConverter]::new()
+    $offsets = @(0, 0.5, 1)
+    for ($i = 0; $i -lt $Palette.Count; $i++) {
+        $brush.GradientStops.Add([System.Windows.Media.GradientStop]::new(
+            $converter.ConvertFromString($Palette[$i]), [double]$offsets[$i]
+        ))
+    }
+    return $brush
+}
+
+function Set-SQLPrimeProgressPalette {
+    param([bool]$Dark = $true)
+
+    if ($null -eq $window -or $null -eq $window.Resources['ProgressFillBrush']) { return }
+    $palette = if ($Dark) { @('#00F5FF', '#7C4DFF', '#FF3DFF') } else { @('#0284C7', '#6366F1', '#D946EF') }
+    try {
+        $window.Resources['ProgressFillBrush'] = New-SQLPrimeProgressBrush -Palette $palette
+    } catch { }
+}
+
 function Apply-Theme {
     param([string]$ThemeName)
     
@@ -1119,6 +1198,8 @@ function Apply-Theme {
         } catch { }
     }
 
+    Set-SQLPrimeProgressPalette -Dark $isDark
+
     if ($isDark) {
         $bgBrush = $bc.ConvertFromString("#0D0D14")
         $borderBrush = $bc.ConvertFromString("#00FFFF")
@@ -1131,7 +1212,8 @@ function Apply-Theme {
         $comboFg = $bc.ConvertFromString("#FFFFFF")
         $progressBg = $bc.ConvertFromString("#11111A")
         $progressFg = $bc.ConvertFromString("#00FFFF")
-        $txtProgressFg = $bc.ConvertFromString("#000000")
+        # Texto blanco con sombra (definida en XAML) para que se lea sobre el degradado.
+        $txtProgressFg = $bc.ConvertFromString("#FFFFFF")
 
         $MainBorder.Background = $bgBrush
         $MainBorder.BorderBrush = $borderBrush
