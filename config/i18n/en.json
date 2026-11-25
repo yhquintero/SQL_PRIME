@@ -5,5 +5,18 @@
   "action.apply": "Apply",
   "action.verify": "Verify",
   "download.missing": "Download missing",
-  "status.ready": "Ready"
+  "status.ready": "Ready",
+  "wizard.step": "Step {0}/4: {1}",
+  "wizard.history": "History:",
+  "wizard.hint.diagnose": "Click REFRESH STATUS to detect instance, version, SP and language.",
+  "wizard.hint.backup": "Create a restore point before applying any change.",
+  "wizard.hint.apply": "Install the recommended Service Pack from UPDATE AND DOWNLOADS.",
+  "wizard.hint.verify": "Check services and export the before/after report.",
+  "button.refresh": "REFRESH STATUS",
+  "button.download": "DOWNLOAD MISSING",
+  "button.report": "EXPORT REPORT",
+  "button.language": "LANGUAGE: {0}",
+  "tooltip.refresh": "Re-detect SQL Server instance, version, SP and language",
+  "tooltip.download": "Download missing packages (resumes partial downloads)",
+  "tooltip.report": "Export before/after service state to CSV, HTML and PDF"
 }
