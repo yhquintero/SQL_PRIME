@@ -4,6 +4,9 @@
     "name": "SQL PRIME",
     "channel": "stable"
   },
+  "ui": {
+    "language": "es"
+  },
   "logging": {
     "level": "INFO",
     "jsonlEnabled": true,

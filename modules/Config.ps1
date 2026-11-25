@@ -4,6 +4,7 @@ function Get-SQLPrimeDefaultConfig {
     return @{
         schemaVersion = 1
         app = @{ name = 'SQL PRIME'; channel = 'stable' }
+        ui = @{ language = 'es' }
         logging = @{ level = 'INFO'; jsonlEnabled = $true; maxSizeMB = 10; retainFiles = 5 }
         downloads = @{ verifySha256 = $true; allowUnverifiedWhenHashMissing = $true; maxConcurrent = 1; retryCount = 2 }
         security = @{ requireAdminForChanges = $true; verifyAuthenticode = $false }

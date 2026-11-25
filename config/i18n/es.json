@@ -5,5 +5,18 @@
   "action.apply": "Aplicar",
   "action.verify": "Verificar",
   "download.missing": "Descargar faltantes",
-  "status.ready": "Listo"
+  "status.ready": "Listo",
+  "wizard.step": "Paso {0}/4: {1}",
+  "wizard.history": "Historial:",
+  "wizard.hint.diagnose": "Pulsa REFRESCAR ESTADO para detectar instancia, versión, SP e idioma.",
+  "wizard.hint.backup": "Crea un punto de restauración antes de aplicar cualquier cambio.",
+  "wizard.hint.apply": "Instala el Service Pack recomendado desde ACTUALIZACIÓN Y DESCARGAS.",
+  "wizard.hint.verify": "Comprueba los servicios y exporta el informe antes/después.",
+  "button.refresh": "REFRESCAR ESTADO",
+  "button.download": "DESCARGAR FALTANTES",
+  "button.report": "EXPORTAR INFORME",
+  "button.language": "IDIOMA: {0}",
+  "tooltip.refresh": "Volver a detectar instancia, versión, SP e idioma de SQL Server",
+  "tooltip.download": "Descargar los paquetes faltantes (reanuda descargas parciales)",
+  "tooltip.report": "Exportar el estado de servicios antes/después a CSV, HTML y PDF"
 }

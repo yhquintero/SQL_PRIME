@@ -27,4 +27,21 @@ Describe 'Wizard module' {
         $s.CurrentStep | Should -Be 'Diagnosticar'
         $s.Completed | Should -Not -Contain 'Diagnosticar'
     }
+
+    It 'goes back one step without skipping validation' {
+        $s = New-SQLPrimeWizardState
+        $s = Step-SQLPrimeWizard -State $s -Step 'Diagnosticar' -Status 'Done'
+        $s = Step-SQLPrimeWizard -State $s -Step 'Respaldar' -Status 'Done'
+        $s.CurrentStep | Should -Be 'Aplicar'
+        $back = Get-SQLPrimeWizardPreviousState -State $s
+        $back.CurrentStep | Should -Be 'Respaldar'
+        $back.Completed | Should -Contain 'Diagnosticar'
+        $back.Completed | Should -Not -Contain 'Respaldar'
+    }
+
+    It 'does not go back from the first step' {
+        $s = New-SQLPrimeWizardState
+        $back = Get-SQLPrimeWizardPreviousState -State $s
+        $back.CurrentStep | Should -Be 'Diagnosticar'
+    }
 }
