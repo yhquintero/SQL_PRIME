@@ -172,7 +172,7 @@ function Save-Config {
 }
 
 # Módulos Fase 0 (fundación): config, logging estructurado, integridad, errores, Authenticode.
-$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1','modules\Wizard.ps1','modules\I18n.ps1','modules\DesignSystem.ps1')
+$script:Phase0Modules = @('modules\Config.ps1','modules\Logging.ps1','modules\Integrity.ps1','modules\ErrorHandling.ps1','modules\Authenticode.ps1','modules\Catalog.ps1','modules\Inventory.ps1','modules\Services.ps1','modules\Detection.ps1','modules\Download.ps1','modules\Wizard.ps1','modules\I18n.ps1','modules\DesignSystem.ps1','modules\DownloadQueue.ps1')
 foreach ($m in $script:Phase0Modules) {
     $mp = Join-Path $PSScriptRoot $m
     if (Test-Path -LiteralPath $mp) {
@@ -662,7 +662,13 @@ function Show-VersionCatalog {
                             <Button x:Name="BtnDownload" Content="⬇ DESCARGAR FALTANTES" Background="#0088CC" Foreground="#FFFFFF" FontWeight="Bold" Width="195" Height="42" Margin="4" Cursor="Hand" FontSize="11" ToolTip="Descargar los paquetes faltantes (reanuda descargas parciales)">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                             </Button>
-                            <Button x:Name="BtnStopDownload" Content="⏹ DETENER" Background="#CC3333" Foreground="#FFFFFF" FontWeight="Bold" Width="150" Height="42" Margin="4" Cursor="Hand" FontSize="11" IsEnabled="False" ToolTip="Detener la descarga actual y conservar el fichero .part">
+                            <Button x:Name="BtnStopDownload" Content="⏹ DETENER" Background="#CC3333" Foreground="#FFFFFF" FontWeight="Bold" Width="150" Height="42" Margin="4" Cursor="Hand" FontSize="11" IsEnabled="False" ToolTip="Detener la descarga actual y conservar el fichero .part" AutomationProperties.Name="Detener todas las descargas" AutomationProperties.HelpText="Conserva los ficheros parciales para reanudar después">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            </Button>
+                            <Button x:Name="BtnPauseFile" Content="⏸ PAUSAR ARCHIVO" Background="#AA6600" Foreground="#FFFFFF" FontWeight="Bold" Width="165" Height="42" Margin="4" Cursor="Hand" FontSize="11" IsEnabled="False" ToolTip="Pausa el archivo actual (o el siguiente de la cola) conservando el .part" AutomationProperties.Name="Pausar archivo actual" AutomationProperties.HelpText="Marca el archivo actual como pausado en la cola persistente">
+                                <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                            </Button>
+                            <Button x:Name="BtnResumeFile" Content="▶ REANUDAR ARCHIVO" Background="#0088AA" Foreground="#FFFFFF" FontWeight="Bold" Width="170" Height="42" Margin="4" Cursor="Hand" FontSize="11" IsEnabled="False" ToolTip="Reanuda el archivo pausado desde el último byte guardado" AutomationProperties.Name="Reanudar archivo pausado" AutomationProperties.HelpText="Cambia el estado del archivo a Pending para continuar desde .part">
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                             </Button>
                             <Button x:Name="BtnRestart" Content="🔄 REINICIAR PC" Background="#FF3333" Foreground="#FFFFFF" FontWeight="Bold" Width="130" Height="42" Margin="4" Cursor="Hand" FontSize="11" IsEnabled="False" ToolTip="Reiniciar el equipo (se habilita tras una actualización)">
@@ -709,6 +715,30 @@ function Show-VersionCatalog {
                                 <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
                             </Button>
                         </WrapPanel>
+                        </TabItem>
+                        <TabItem Header="🧭 ASISTENTE">
+                        <StackPanel Margin="12,8,12,8" HorizontalAlignment="Center" Width="720">
+                            <TextBlock x:Name="TxtWizardStep" Text="Paso 1/4: Diagnosticar" Foreground="#00F5FF" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"
+                                       AutomationProperties.Name="Paso actual del asistente"/>
+                            <TextBlock x:Name="TxtWizardHint" Text="Diagnostica, respalda, aplica y verifica con un flujo guiado." Foreground="#CCCCDD" FontSize="11"
+                                       TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,4,0,8"/>
+                            <WrapPanel HorizontalAlignment="Center" Margin="0,2,0,8">
+                                <Button x:Name="BtnWizardBack" Content="◀ ATRÁS" Background="#4455AA" Foreground="#FFFFFF" FontWeight="Bold" Width="120" Height="36" Margin="4" Cursor="Hand" FontSize="11" ToolTip="Volver al paso anterior" AutomationProperties.Name="Paso anterior del asistente" IsEnabled="False">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                </Button>
+                                <Button x:Name="BtnWizardNext" Content="SIGUIENTE ▶" Background="#00AA88" Foreground="#FFFFFF" FontWeight="Bold" Width="140" Height="36" Margin="4" Cursor="Hand" FontSize="11" ToolTip="Marcar el paso actual como completado y avanzar" AutomationProperties.Name="Completar paso y avanzar">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                </Button>
+                                <Button x:Name="BtnWizardFail" Content="⚠ MARCAR FALLO" Background="#CC3333" Foreground="#FFFFFF" FontWeight="Bold" Width="140" Height="36" Margin="4" Cursor="Hand" FontSize="11" ToolTip="Registrar el paso actual como fallido y permanecer en él" AutomationProperties.Name="Marcar paso actual como fallido">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                </Button>
+                                <Button x:Name="BtnWizardReset" Content="↺ REINICIAR" Background="#666666" Foreground="#FFFFFF" FontWeight="Bold" Width="130" Height="36" Margin="4" Cursor="Hand" FontSize="11" ToolTip="Reiniciar el asistente desde Diagnosticar" AutomationProperties.Name="Reiniciar asistente">
+                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></Button.Resources>
+                                </Button>
+                            </WrapPanel>
+                            <TextBlock x:Name="TxtWizardHistory" Text="Historial: (vacío)" Foreground="#AAAAAA" FontSize="10" TextWrapping="Wrap"
+                                       AutomationProperties.Name="Historial de pasos del asistente"/>
+                        </StackPanel>
                         </TabItem>
                     </TabControl>
                 </Grid>
@@ -804,9 +834,10 @@ $script:ButtonStates = @{}
 # Lista explicita: funciona también con botones dentro de pestañas no visibles.
 $script:AllButtonNames = @(
     'BtnRefresh','BtnRepairWMI','BtnUpdate','BtnService','BtnStopAllServices',
-    'BtnInventory','BtnDownload','BtnStopDownload','BtnRestart','BtnLog',
+    'BtnInventory','BtnDownload','BtnStopDownload','BtnPauseFile','BtnResumeFile','BtnRestart','BtnLog',
     'BtnMakeFolders','BtnCatalog','BtnOpenRoot',
     'BtnManageServices','BtnReport','BtnProfiles','BtnSchedule','BtnSimulate','BtnLogVerbosity',
+    'BtnWizardBack','BtnWizardNext','BtnWizardFail','BtnWizardReset',
     'BtnTheme','BtnMinimize','BtnClose'
 )
 
@@ -986,6 +1017,15 @@ $BtnUpdate     = $window.FindName("BtnUpdate")
 $BtnInventory  = $window.FindName("BtnInventory")
 $BtnDownload   = $window.FindName("BtnDownload")
 $BtnStopDownload = $window.FindName("BtnStopDownload")
+$BtnPauseFile  = $window.FindName("BtnPauseFile")
+$BtnResumeFile = $window.FindName("BtnResumeFile")
+$BtnWizardBack   = $window.FindName("BtnWizardBack")
+$BtnWizardNext   = $window.FindName("BtnWizardNext")
+$BtnWizardFail   = $window.FindName("BtnWizardFail")
+$BtnWizardReset  = $window.FindName("BtnWizardReset")
+$TxtWizardStep   = $window.FindName("TxtWizardStep")
+$TxtWizardHint   = $window.FindName("TxtWizardHint")
+$TxtWizardHistory= $window.FindName("TxtWizardHistory")
 $BtnService    = $window.FindName("BtnService")
 $BtnStopAllServices = $window.FindName("BtnStopAllServices")
 $BtnManageServices = $window.FindName("BtnManageServices")
@@ -1016,6 +1056,68 @@ $script:DownloadTickHandler = $null
 $script:DownloadCurrentFile = ""
 $script:DownloadCurrentBytes = 0
 $script:DownloadCurrentTotal = 0
+# Centro de descargas Pro: muestreo de velocidad, ETA y cola persistente.
+$script:DownloadLastSampleTime = $null
+$script:DownloadLastSampleBytes = 0
+$script:DownloadSpeedBps = 0
+$script:DownloadEtaSeconds = 0
+$script:DownloadQueuePath = ''
+
+# Wizard WPF de 4 pasos: estado compartido con modules/Wizard.ps1 (testeable).
+$script:WizardState = $null
+$TxtWizardHints = @{
+    'Diagnosticar' = 'Pulsa REFRESCAR ESTADO para detectar instancia, versión, SP e idioma.'
+    'Respaldar'    = 'Crea un punto de restauración antes de aplicar cualquier cambio.'
+    'Aplicar'      = 'Instala el Service Pack recomendado desde ACTUALIZACIÓN Y DESCARGAS.'
+    'Verificar'    = 'Comprueba los servicios y exporta el informe antes/después.'
+}
+
+function Update-SQLPrimeWizardUI {
+    if (-not $script:WizardState) { $script:WizardState = New-SQLPrimeWizardState }
+    $state = $script:WizardState
+    $steps = @($state.Steps)
+    $idx = [array]::IndexOf($steps, [string]$state.CurrentStep)
+    if ($idx -lt 0) { $idx = 0 }
+    $TxtWizardStep.Text = "Paso $($idx + 1)/$($steps.Count): $($state.CurrentStep)"
+    if ($TxtWizardHint) { $TxtWizardHint.Text = $TxtWizardHints[[string]$state.CurrentStep] }
+    if ($TxtWizardHistory) {
+        $recent = @($state.History | Select-Object -Last 4)
+        $lines = foreach ($h in $recent) { "$($h.Step)=$($h.Status)" }
+        $TxtWizardHistory.Text = if ($lines.Count) { "Historial: $($lines -join ' · ')" } else { 'Historial: (vacío)' }
+    }
+    $BtnWizardBack.IsEnabled = ($idx -gt 0)
+    $BtnWizardNext.IsEnabled = $true
+    $BtnWizardFail.IsEnabled = $true
+}
+
+function Complete-SQLPrimeWizardStep {
+    param(
+        [Parameter(Mandatory=$true)][ValidateSet('Diagnosticar','Respaldar','Aplicar','Verificar')][string]$Step,
+        [ValidateSet('Pending','Running','Done','Failed','Skipped')][string]$Status = 'Done'
+    )
+    try {
+        if (-not $script:WizardState) { $script:WizardState = New-SQLPrimeWizardState }
+        $script:WizardState = Step-SQLPrimeWizard -State $script:WizardState -Step $Step -Status $Status
+        Update-SQLPrimeWizardUI
+        try {
+            Write-SQLPrimeStructuredLog -Level INFO -Component 'wizard' -OperationId $script:DownloadOperationId `
+                -Message "Wizard step: $Step ($Status)" `
+                -Data @{ step=$Step; status=$Status; current=$script:WizardState.CurrentStep; history=@($script:WizardState.History).Count }
+        } catch { }
+    } catch {
+        # Los saltos invalidos se ignoran: nunca deben romper la accion del usuario.
+        Update-UI -Log "Wizard: transición no permitida ($Step -> $Status)." -LogColor '#FFAA00'
+    }
+}
+
+function Reset-SQLPrimeWizardUI {
+    $script:WizardState = New-SQLPrimeWizardState
+    Update-SQLPrimeWizardUI
+    Update-UI -Log 'Asistente reiniciado: Paso 1/4 Diagnosticar.' -LogColor '#00CCFF'
+}
+
+# Estado inicial del stepper (los controles ya fueron mapeados mas arriba).
+try { Update-SQLPrimeWizardUI } catch { }
 $script:ReportPath     = Join-Path $PSScriptRoot "Inventario_Instaladores_SQL2008.txt"
 $script:Timer = New-Object System.Windows.Threading.DispatcherTimer
 $script:DownloadTimer = New-Object System.Windows.Threading.DispatcherTimer
@@ -1037,6 +1139,8 @@ $script:DownloadTimerTick = {
             $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
+            $BtnPauseFile.IsEnabled = $false
+            $BtnResumeFile.IsEnabled = $false
             return
         }
         $job = Get-Job -Id $script:DownloadJob.Id -ErrorAction SilentlyContinue
@@ -1047,15 +1151,42 @@ $script:DownloadTimerTick = {
             $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Collapsed
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
+            $BtnPauseFile.IsEnabled = $false
+            $BtnResumeFile.IsEnabled = $false
             return
         }
 
         $newItems = @(Receive-Job -Job $job -ErrorAction SilentlyContinue)
         foreach ($r in $newItems) {
             if ($r.PSObject.Properties.Name -contains "Type" -and $r.Type -eq "PROGRESS") {
+                $prevFile = $script:DownloadCurrentFile
                 $script:DownloadCurrentFile  = $r.Name
                 $script:DownloadCurrentBytes = [int64]$r.Bytes
                 $script:DownloadCurrentTotal = [int64]$r.Total
+
+                # Velocidad media movil y ETA basado en bytes/s (no en numero de pasos).
+                $now = [DateTime]::UtcNow
+                if ($prevFile -ne $script:DownloadCurrentFile -or $null -eq $script:DownloadLastSampleTime) {
+                    $script:DownloadSpeedBps = 0
+                    $script:DownloadLastSampleBytes = [int64]$r.Bytes
+                } else {
+                    $secs = ($now - $script:DownloadLastSampleTime).TotalSeconds
+                    if ($secs -gt 0.05) {
+                        $instant = ([int64]$r.Bytes - [int64]$script:DownloadLastSampleBytes) / $secs
+                        if ($instant -gt 0) {
+                            $script:DownloadSpeedBps = if ($script:DownloadSpeedBps -gt 0) {
+                                (0.6 * $script:DownloadSpeedBps) + (0.4 * $instant)
+                            } else { $instant }
+                        }
+                    }
+                }
+                $script:DownloadLastSampleTime = $now
+                $script:DownloadLastSampleBytes = [int64]$r.Bytes
+                $remaining = [Math]::Max(0, [int64]$r.Total - [int64]$r.Bytes)
+                $script:DownloadEtaSeconds = if ($script:DownloadSpeedBps -gt 0) {
+                    [int][math]::Round($remaining / $script:DownloadSpeedBps)
+                } else { 0 }
+
                 $fraction = 0
                 if ($r.Total -gt 0) { $fraction = [double]$r.Bytes / [double]$r.Total }
                 $done = $script:DownloadResults.Count
@@ -1070,11 +1201,23 @@ $script:DownloadTimerTick = {
                 $filePct = if ($r.Total -gt 0) { [math]::Round(100 * $r.Bytes / $r.Total, 1) } else { 0 }
                 $mbNow   = [math]::Round($r.Bytes / 1MB, 1)
                 $mbTot   = if ($r.Total -gt 0) { [math]::Round($r.Total / 1MB, 1) } else { 0 }
+                $mbps    = [math]::Round($script:DownloadSpeedBps / 1MB, 2)
+                $etaTxt  = if ($script:DownloadEtaSeconds -gt 0) {
+                    "ETA $(([int]($script:DownloadEtaSeconds / 60)).ToString('00')):$(($script:DownloadEtaSeconds % 60).ToString('00'))"
+                } else { 'ETA calculando' }
                 $fileIdx = $done + 1
-                $status  = "Descargando $fileIdx/$($script:DownloadTotal): $($r.Name) - $filePct% ($mbNow / $mbTot MB)"
+                $status  = "Descargando $fileIdx/$($script:DownloadTotal): $($r.Name) - $filePct% ($mbNow / $mbTot MB) · $mbps MB/s · $etaTxt"
                 $TxtDownloadStatus.Text = $status
                 $TxtDownloadStatus.Visibility = [System.Windows.Visibility]::Visible
                 $TxtProgress.Text = "$([int][math]::Floor($filePct))%"
+
+                $BtnPauseFile.IsEnabled = $true
+                $BtnResumeFile.IsEnabled = $false
+                if ($script:DownloadQueuePath -and (Get-Command Set-SQLPrimeDownloadQueueState -ErrorAction SilentlyContinue)) {
+                    try {
+                        Set-SQLPrimeDownloadQueueState -Name $r.Name -State 'Downloading' -BaseDir $PSScriptRoot -Bytes ([int64]$r.Bytes) -Total ([int64]$r.Total) -SpeedBps $script:DownloadSpeedBps -EtaSeconds $script:DownloadEtaSeconds | Out-Null
+                    } catch { }
+                }
                 continue
             }
             $script:DownloadResults += $r
@@ -1086,9 +1229,22 @@ $script:DownloadTimerTick = {
                 try { if ($r.PSObject.Properties.Name -contains 'Sha256' -and $r.Sha256) { $hashStr = " | SHA256: $($r.Sha256)" } } catch { }
                 Update-UI -Log "$mode`: $($r.Name) ($([math]::Round($r.Bytes / 1MB, 1)) MB$pctStr) -> $($r.Path)$hashStr" -LogColor "#00FF00"
                 try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message "Download completed: $($r.Name)" -Data @{ name=$r.Name; path=$r.Path; bytes=$r.Bytes; resumed=$r.Resumed; sha256=$r.Sha256; hashChecked=$r.HashChecked } } } catch { }
+                if ($script:DownloadQueuePath -and (Get-Command Set-SQLPrimeDownloadQueueState -ErrorAction SilentlyContinue)) {
+                    try { Set-SQLPrimeDownloadQueueState -Name $r.Name -State 'Completed' -BaseDir $PSScriptRoot | Out-Null } catch { }
+                }
+            } elseif ($r.Status -eq 'PAUSED') {
+                Update-UI -Log "PAUSADO: $($r.Name). El fichero .part se conserva para reanudarlo." -LogColor '#FFAA00'
+                if ($script:DownloadQueuePath -and (Get-Command Set-SQLPrimeDownloadQueueState -ErrorAction SilentlyContinue)) {
+                    try { Set-SQLPrimeDownloadQueueState -Name $r.Name -State 'Paused' -BaseDir $PSScriptRoot -Bytes ([int64]$r.Bytes) -Total ([int64]$r.Total) | Out-Null } catch { }
+                }
+                $BtnPauseFile.IsEnabled = $false
+                $BtnResumeFile.IsEnabled = $true
             } else {
                 Update-UI -Log "FALLO: $($r.Name) - $($r.Message)" -LogColor "#FF0000"
                 try { if (Get-Command Write-SQLPrimeStructuredLog -ErrorAction SilentlyContinue) { Write-SQLPrimeStructuredLog -Level ERROR -Component 'download' -OperationId $script:DownloadOperationId -Message "Download failed: $($r.Name)" -Data @{ name=$r.Name; message=$r.Message } } } catch { }
+                if ($script:DownloadQueuePath -and (Get-Command Set-SQLPrimeDownloadQueueState -ErrorAction SilentlyContinue)) {
+                    try { Set-SQLPrimeDownloadQueueState -Name $r.Name -State 'Error' -BaseDir $PSScriptRoot -LastError ([string]$r.Message) | Out-Null } catch { }
+                }
             }
             if ($script:DownloadTotal -gt 0) {
                 $ProgressBar.Value = [Math]::Min(95, 5 + [int](90 * $script:DownloadResults.Count / $script:DownloadTotal))
@@ -1108,6 +1264,10 @@ $script:DownloadTimerTick = {
             $script:DownloadCurrentTotal = 0
             $BtnDownload.IsEnabled = $true
             $BtnStopDownload.IsEnabled = $false
+            $BtnPauseFile.IsEnabled = $false
+            $BtnResumeFile.IsEnabled = $false
+            $script:DownloadLastSampleTime = $null
+            $script:DownloadLastSampleBytes = 0
             $ok = @($script:DownloadResults | Where-Object { $_.Status -eq "OK" }).Count
             Update-UI -Log "Descargas terminadas: $ok correctas de $($script:DownloadTotal)." -LogColor "#00FF00"
             Refresh-Detection
@@ -1121,6 +1281,8 @@ $script:DownloadTimerTick = {
         $script:DownloadCurrentFile = ""
         $BtnDownload.IsEnabled = $true
         $BtnStopDownload.IsEnabled = $false
+        $BtnPauseFile.IsEnabled = $false
+        $BtnResumeFile.IsEnabled = $false
         if (-not $script:DownloadWarningShown) {
             $script:DownloadWarningShown = $true
             Update-UI -Log "AVISO: existe un error de supervisión o una descarga incompleta. Se detuvo el monitor; pulsa DESCARGAR FALTANTES para continuar desde el último byte." -LogColor "#FFAA00"
@@ -1788,6 +1950,7 @@ function Refresh-Detection {
         Update-UI -Log "Página oficial: $(Get-DownloadPage -Definition $top -Lang $script:PreferredLang)" -LogColor "#00CCFF"
         Update-UI -Log "Pulsa DESCARGAR FALTANTES para bajarlo a su carpeta." -LogColor "#FFFF00"
     }
+    Complete-SQLPrimeWizardStep -Step 'Diagnosticar' -Status Done
 }
 
 # ------------------------------------------------------------------------------
@@ -1902,6 +2065,16 @@ function Start-InstallerDownloads {
         Update-UI -Log "Faltan $($missingNoDirect.Count) fichero(s) sin URL directa verificada; revisa INVENTARIO / DESCARGAS para los enlaces oficiales." -LogColor "#FFAA00"
     }
 
+    # Centro de descargas Pro: persistir la cola y conservar pausas entre sesiones.
+    if ($targets.Count -gt 0 -and (Get-Command Initialize-SQLPrimeDownloadQueue -ErrorAction SilentlyContinue)) {
+        try {
+            $script:DownloadQueuePath = Initialize-SQLPrimeDownloadQueue -Targets $targets -BaseDir $PSScriptRoot
+            Update-UI -Log "[COLA] $($targets.Count) archivo(s) persistidos en logs\download_queue.json (velocidad/ETA por archivo)." -LogColor '#00CCFF'
+        } catch {
+            Update-UI -Log "No se pudo persistir la cola de descargas: $($_.Exception.Message)" -LogColor '#FFAA00'
+        }
+    }
+
     if ($targets.Count -eq 0) {
         Update-UI -Log "No faltan instaladores $lang con URL directa verificada, o ya están presentes." -LogColor "#00FF00"
         $TxtDownloadStatus.Text = "No hay descargas pendientes. Todos los instaladores con URL directa verificada están presentes."
@@ -1926,8 +2099,26 @@ function Start-InstallerDownloads {
 
     # Descarga a ".part" con cabecera Range: se puede detener y reanudar.
     $script:DownloadJob = Start-Job -ScriptBlock {
-        param($items)
+        param($items, $baseDir)
+
+        # Estado de la cola leido desde disco: permite pausar un archivo sin detener el job.
+        function Get-QueueState {
+            param([string]$Name)
+            $path = Join-Path $baseDir 'logs\download_queue.json'
+            if (-not (Test-Path -LiteralPath $path)) { return 'Pending' }
+            try {
+                $queue = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+                $entry = @($queue | Where-Object { $_.Name -eq $Name })[0]
+                if ($null -ne $entry) { return [string]$entry.State }
+            } catch { }
+            return 'Pending'
+        }
+
         foreach ($item in $items) {
+            if ((Get-QueueState -Name $item.Name) -in @('Paused', 'Cancelled')) {
+                [pscustomobject]@{ Type="RESULT"; Name=$item.Name; Status="PAUSED"; Path=$item.Path; Bytes=[int64]$item.ResumeBytes; Expected=[int64]$item.ExpectedSize; Message="Pausado desde la cola; se reanudara desde .part" }
+                continue
+            }
             $expectedHash = $null
             try { if ($item.PSObject.Properties.Name -contains 'ExpectedSha256') { $expectedHash = [string]$item.ExpectedSha256 } } catch { }
             $result = [pscustomobject]@{ Type="RESULT"; Name=$item.Name; Status="ERROR"; Path=$item.FinalPath; Bytes=0; Expected=$item.ExpectedSize; Resumed=$false; Sha256=$null; HashChecked=$false; HashOk=$true; Message="" }
@@ -1964,19 +2155,31 @@ function Start-InstallerDownloads {
                 $written = $start
                 $total = $start + [int64]$resp.ContentLength
                 $nextReport = $start + 10485760
+                $ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
                 # Emitir progreso inicial para que la UI muestre % inmediatamente (incluye reanudaciones).
-                [pscustomobject]@{ Type="PROGRESS"; Name=$item.Name; Bytes=$written; Total=$total }
+                [pscustomobject]@{ Type="PROGRESS"; Name=$item.Name; FileId=$item.Name; Bytes=$written; Total=$total; Ts=$ts; State="Downloading" }
 
+                $paused = $false
                 while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
                     $fs.Write($buffer, 0, $read)
                     $written += $read
                     if ($written -ge $nextReport) {
                         $nextReport = $written + 10485760
-                        [pscustomobject]@{ Type="PROGRESS"; Name=$item.Name; Bytes=$written; Total=$total }
+                        $ts = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+                        [pscustomobject]@{ Type="PROGRESS"; Name=$item.Name; FileId=$item.Name; Bytes=$written; Total=$total; Ts=$ts; State="Downloading" }
+                        if ((Get-QueueState -Name $item.Name) -in @('Paused', 'Cancelled')) {
+                            $paused = $true
+                            break
+                        }
                     }
                 }
                 $fs.Dispose(); $fs = $null
                 $resp.Close(); $resp = $null
+
+                if ($paused) {
+                    [pscustomobject]@{ Type="RESULT"; Name=$item.Name; Status="PAUSED"; Path=$item.Path; Bytes=[int64]$written; Expected=[int64]$total; Message="Pausado a peticion del usuario; .part conservado" }
+                    continue
+                }
 
                 $len = [int64](Get-Item -LiteralPath $item.Path).Length
                 if ($item.ExpectedSize -gt 0 -and $len -ne [int64]$item.ExpectedSize) {
@@ -2009,7 +2212,7 @@ function Start-InstallerDownloads {
             }
             $result
         }
-    } -ArgumentList (, $targets)
+    } -ArgumentList (, $targets), $PSScriptRoot
 
     # El handler se define una sola vez (ver $script:DownloadTimerTick).
     # Solo se registra en el timer la primera vez; asi no se acumulan
@@ -2861,6 +3064,79 @@ $BtnLog.Add_Click({
 })
 $BtnDownload.Add_Click({ Start-InstallerDownloads })
 $BtnStopDownload.Add_Click({ Stop-InstallerDownloads })
+
+# Centro de descargas Pro: pausa/reanudacion por archivo sobre la cola persistente.
+$BtnPauseFile.Add_Click({
+    try {
+        $name = $script:DownloadCurrentFile
+        if (-not $name -and $script:DownloadQueuePath) {
+            $pending = @(Get-SQLPrimeDownloadQueue -BaseDir $PSScriptRoot |
+                Where-Object { $_.State -eq 'Downloading' -or $_.State -eq 'Pending' })
+            if ($pending.Count -gt 0) { $name = $pending[0].Name }
+        }
+        if (-not $name) {
+            Update-UI -Log 'No hay ningun archivo en curso para pausar.' -LogColor '#FFAA00'
+            return
+        }
+        $entry = Set-SQLPrimeDownloadQueueState -Name $name -State 'Paused' -BaseDir $PSScriptRoot
+        if ($entry) {
+            Update-UI -Log "PAUSADO: $name . El fichero .part se conserva; se omitira en la siguiente pasada." -LogColor '#FFAA00'
+            $script:DownloadLastSampleTime = $null
+            $BtnPauseFile.IsEnabled = $false
+            $BtnResumeFile.IsEnabled = $true
+            try { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message 'Download paused' -Data @{ name=$name } } catch { }
+        } else {
+            Update-UI -Log "No se encontro '$name' en la cola persistente." -LogColor '#FFAA00'
+        }
+    } catch { Update-UI -Log "No se pudo pausar: $($_.Exception.Message)" -LogColor '#FF0000' }
+})
+$BtnResumeFile.Add_Click({
+    try {
+        $name = $script:DownloadCurrentFile
+        if (-not $name -and $script:DownloadQueuePath) {
+            $paused = @(Get-SQLPrimeDownloadQueue -BaseDir $PSScriptRoot | Where-Object { $_.State -eq 'Paused' })
+            if ($paused.Count -gt 0) { $name = $paused[0].Name }
+        }
+        if (-not $name) {
+            Update-UI -Log 'No hay ningun archivo pausado en la cola.' -LogColor '#FFAA00'
+            return
+        }
+        $entry = Set-SQLPrimeDownloadQueueState -Name $name -State 'Pending' -BaseDir $PSScriptRoot
+        if ($entry) {
+            Update-UI -Log "REANUDADO: $name . Vuelve a la cola; se continuara desde el ultimo byte de .part." -LogColor '#00FF00'
+            $BtnResumeFile.IsEnabled = $false
+            $BtnPauseFile.IsEnabled = [bool]$script:DownloadJob
+            try { Write-SQLPrimeStructuredLog -Level INFO -Component 'download' -OperationId $script:DownloadOperationId -Message 'Download resumed' -Data @{ name=$name } } catch { }
+        } else {
+            Update-UI -Log "No se encontro '$name' en la cola persistente." -LogColor '#FFAA00'
+        }
+    } catch { Update-UI -Log "No se pudo reanudar: $($_.Exception.Message)" -LogColor '#FF0000' }
+})
+
+$BtnWizardNext.Add_Click({
+    $state = $script:WizardState
+    if (-not $state) { $state = New-SQLPrimeWizardState }
+    $step = [string]$state.CurrentStep
+    $steps = @($state.Steps)
+    $idx = [array]::IndexOf($steps, $step)
+    Complete-SQLPrimeWizardStep -Step $step -Status Done
+    if ($idx -eq $steps.Count - 1) {
+        Update-UI -Log 'Asistente completado: 4/4 pasos registrados.' -LogColor '#00FF00'
+    }
+})
+$BtnWizardFail.Add_Click({
+    $state = $script:WizardState
+    if (-not $state) { $state = New-SQLPrimeWizardState }
+    Complete-SQLPrimeWizardStep -Step ([string]$state.CurrentStep) -Status Failed
+})
+$BtnWizardBack.Add_Click({
+    $state = $script:WizardState
+    if (-not $state) { $state = New-SQLPrimeWizardState }
+    $script:WizardState = Get-SQLPrimeWizardPreviousState -State $state
+    Update-SQLPrimeWizardUI
+})
+$BtnWizardReset.Add_Click({ Reset-SQLPrimeWizardUI })
+
 $BtnService.Add_Click({ Repair-SQLService })
 $BtnStopAllServices.Add_Click({ Stop-AllSQLServices })
 $BtnManageServices.Add_Click({
@@ -2869,7 +3145,8 @@ $BtnManageServices.Add_Click({
 })
 $BtnReport.Add_Click({
     $inst = if ($script:DetectedInfo.Instance) { $script:DetectedInfo.Instance } else { '' }
-    $null = Export-SQLPrimeReport -Instance $inst -OpenFolder
+    $null = Export-SQLPrimeReport -Instance $inst -OpenFolder -Pdf
+    Complete-SQLPrimeWizardStep -Step 'Verificar' -Status Done
 })
 $BtnProfiles.Add_Click({
     $inst = if ($script:DetectedInfo.Instance) { $script:DetectedInfo.Instance } else { '' }
@@ -2960,8 +3237,10 @@ $BtnUpdate.Add_Click({
                         Update-UI -Log "¡Actualización completada! Código: $exitCode" -LogColor "#00FF00"
                         $BtnRestart.IsEnabled = $true
                         Update-UI -Log "Reinicia el equipo y luego pulsa REFRESCAR ESTADO." -LogColor "#FFFF00"
+                        Complete-SQLPrimeWizardStep -Step 'Aplicar' -Status Done
                     } else {
                         Update-UI -Log "Error en el instalador. Código: $exitCode" -LogColor "#FF0000"
+                        Complete-SQLPrimeWizardStep -Step 'Aplicar' -Status Failed
                     }
                     $BtnUpdate.IsEnabled = $true
                 } elseif ($ProgressBar.Value -lt 95) {

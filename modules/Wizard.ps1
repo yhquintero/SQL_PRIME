@@ -35,3 +35,16 @@ function Step-SQLPrimeWizard {
     }
     return $State
 }
+
+function Get-SQLPrimeWizardPreviousState {
+    param([Parameter(Mandatory=$true)]$State)
+    $steps = @($State.Steps)
+    $idx = [array]::IndexOf($steps, $State.CurrentStep)
+    if ($idx -le 0) { return $State }
+    # Rebuild the state up to the previous step using the same validated transitions.
+    $rebuilt = New-SQLPrimeWizardState
+    for ($i = 0; $i -lt ($idx - 1); $i++) {
+        $rebuilt = Step-SQLPrimeWizard -State $rebuilt -Step $steps[$i] -Status 'Done'
+    }
+    return $rebuilt
+}

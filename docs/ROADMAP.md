@@ -28,6 +28,7 @@
 - [x] Dry-run con diff y rollback al activar SIMULACIÓN (`New-SQLPrimeDryRunPreview`)
 - [x] Tests de integración con proveedor de URL simulado y estados `.part` (`tests/DownloadIntegration.Tests.ps1`)
 - [ ] Backlog extendido de mejora continua: [`docs/CONTINUOUS_IMPROVEMENT.md`](CONTINUOUS_IMPROVEMENT.md)
+- [ ] Propuesta de migración Web completa (paridad con el script WPF + agente local): [`docs/WEB_MIGRATION_PROPOSAL.md`](WEB_MIGRATION_PROPOSAL.md)
 - [x] i18n scaffold: `modules/I18n.ps1`, `config/i18n/es.json`, `config/i18n/en.json` (falta integración UI)
 - [ ] Accesibilidad completa (teclado, contraste, lector de pantalla)
 

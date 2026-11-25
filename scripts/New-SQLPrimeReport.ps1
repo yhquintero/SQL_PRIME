@@ -7,7 +7,9 @@ Includes futuristic progress bars for inventory coverage, SHA-256 coverage and p
 [CmdletBinding()]
 param(
     [string]$BaseDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
-    [string]$OutputPath = ''
+    [string]$OutputPath = '',
+    [switch]$Pdf,
+    [string]$PdfPath = ''
 )
 
 Set-StrictMode -Version Latest
@@ -170,3 +172,11 @@ $($rows -join "`n")
 
 $html | Set-Content -LiteralPath $OutputPath -Encoding UTF8
 Write-Host "Report generated: $OutputPath"
+
+if ($Pdf) {
+    $exporter = Join-Path $PSScriptRoot 'Export-SQLPrimePdf.ps1'
+    if (-not $PdfPath) { $PdfPath = [System.IO.Path]::ChangeExtension($OutputPath, '.pdf') }
+    & $exporter -HtmlPath $OutputPath -OutputPath $PdfPath
+    Write-Host "PDF generated: $PdfPath"
+}
+

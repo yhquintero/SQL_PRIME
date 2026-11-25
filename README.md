@@ -157,8 +157,11 @@ Los colores del degradado se ajustan desde `Apply-Theme` (`Fix_Error-0x800706be.
 - **Telemetría local**: `scripts/New-SQLPrimeTelemetryDashboard.ps1` genera un dashboard con sparklines SVG a partir de `logs/sql_prime.jsonl` (sin enviar datos a ningún servicio).
 - **Dry-run**: al activar `SIMULACIÓN` se genera automáticamente un HTML con el diff planeado (estado actual → acción) y la instrucción de rollback por servicio.
 - **Calidad**: nuevos tests de integración cubren reanudación `.part`, final incompleto, tamaño desconocido e inventario previo.
+- **PDF**: `scripts/Export-SQLPrimePdf.ps1` convierte cualquier reporte HTML a PDF con Edge headless, sin dependencias externas.
 
 El backlog completo y los próximos aspectos a superar están en [`docs/CONTINUOUS_IMPROVEMENT.md`](docs/CONTINUOUS_IMPROVEMENT.md).
+
+La propuesta para llevar toda la experiencia a la Web (arquitectura híbrida con agente local, API, SignalR, seguridad y fases) está en [`docs/WEB_MIGRATION_PROPOSAL.md`](docs/WEB_MIGRATION_PROPOSAL.md).
 
 ---
 

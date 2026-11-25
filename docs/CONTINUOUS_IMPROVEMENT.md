@@ -8,6 +8,8 @@
 - [x] Telemetría local con sparklines (`scripts/New-SQLPrimeTelemetryDashboard.ps1`).
 - [x] Dry-run con diff y rollback (`New-SQLPrimeDryRunPreview`, activo al encender SIMULACIÓN).
 - [x] Tests de integración con proveedor de URL simulado y estados `.part`.
+- [x] Exportación PDF de reportes HTML con Edge headless (`scripts/Export-SQLPrimePdf.ps1`).
+- [x] Propuesta completa de migración Web con paridad funcional (`docs/WEB_MIGRATION_PROPOSAL.md`).
 
 ## Backlog de la iteración anterior (P1/P2)
 
@@ -16,7 +18,7 @@
 | 1 | Centro de descargas Pro: ETA/velocidad/pausa por archivo/cola persistente | Parcial |
 | 2 | Wizard WPF de 4 pasos integrado | Scaffold |
 | 3 | i18n + accesibilidad reales en UI | Scaffold |
-| 4 | Reporte ejecutivo antes/después + PDF | HTML listo, falta PDF |
+| 4 | Reporte ejecutivo antes/después + PDF | HTML y exportador PDF listos |
 | 5 | Hashes SHA-256 oficiales de 3 instaladores x86 | 3 pendientes |
 | 6 | Design system / paleta centralizada | Implementado |
 | 7 | Telemetría local + sparklines | Implementado |

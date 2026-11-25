@@ -295,7 +295,7 @@ function Save-SQLPrimeSnapshot {
 }
 
 function Export-SQLPrimeReport {
-    param([string]$Instance, [switch]$OpenFolder)
+    param([string]$Instance, [switch]$OpenFolder, [switch]$Pdf)
     if (-not $script:Snapshots -or $script:Snapshots.Count -eq 0) {
         Update-UI -Log 'No hay datos de servicios para exportar; ejecuta primero Reparar o Desactivar.' -LogColor '#FFAA00'
         return
@@ -369,8 +369,27 @@ $($rows -join "`n")</table></section>
         [System.IO.File]::WriteAllText($html, $doc, (New-Object System.Text.UTF8Encoding($false)))
         Update-UI -Log "[REPORTE] CSV: $csv" -LogColor '#00FF00'
         Update-UI -Log "[REPORTE] HTML: $html" -LogColor '#00FF00'
-        if ($OpenFolder) { Start-Process explorer.exe -ArgumentList "/select,`"$csv`"" }
-        return @{ Csv = $csv; Html = $html }
+
+        $pdf = $null
+        if ($Pdf) {
+            $exporter = Join-Path $PSScriptRoot 'scripts\Export-SQLPrimePdf.ps1'
+            if (Test-Path -LiteralPath $exporter) {
+                try {
+                    $pdf = [System.IO.Path]::ChangeExtension($html, '.pdf')
+                    & $exporter -HtmlPath $html -OutputPath $pdf | Out-Null
+                    Update-UI -Log "[REPORTE] PDF: $pdf" -LogColor '#00FF00'
+                } catch {
+                    $pdf = $null
+                    Update-UI -Log "No se pudo generar el PDF: $($_.Exception.Message)" -LogColor '#FFAA00'
+                }
+            }
+        }
+
+        if ($OpenFolder) {
+            $selectPath = if ($pdf) { $pdf } else { $csv }
+            Start-Process explorer.exe -ArgumentList "/select,`"$selectPath`""
+        }
+        return @{ Csv = $csv; Html = $html; Pdf = $pdf }
     } catch {
         Update-UI -Log "No se pudo exportar el informe: $($_.Exception.Message)" -LogColor '#FF0000'
         return $null
@@ -744,7 +763,7 @@ function Invoke-SQLPrimeCli {
             Test-AllSQLServices -Instance $Instance -ExpectedState 'Stopped' | Out-Null
         }
         'Verify' { Test-AllSQLServices -Instance $Instance -ExpectedState 'Running' | Out-Null }
-        'Report' { Export-SQLPrimeReport -Instance $Instance | Out-Null }
+        'Report' { Export-SQLPrimeReport -Instance $Instance -Pdf | Out-Null }
     }
     Write-Host 'SQL PRIME - CLI finalizado.' -ForegroundColor Green
 }
